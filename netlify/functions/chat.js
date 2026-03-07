@@ -2,11 +2,12 @@
 // Proxy ke OpenRouter dengan AUTO-FALLBACK model
 
 const MODELS = [
-  'openrouter/auto',                               // OpenRouter auto-select best model
-  'meta-llama/llama-3.3-70b-instruct:free',        // Llama 3.3 70B
-  'google/gemma-3-27b-it:free',                    // Gemma 3 27B
-  'mistralai/mistral-small-3.1-24b-instruct:free', // Mistral Small 3.1
-  'openrouter/free',                               // Last resort: OpenRouter random free model
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'google/gemma-3-27b-it:free',
+  'google/gemma-3-12b-it:free',
+  'mistralai/mistral-small-3.1-24b-instruct:free',
+  'deepseek/deepseek-r1-distill-llama-70b:free',
+  'deepseek/deepseek-chat-v3-0324:free',
 ];
 
 exports.handler = async (event) => {
@@ -59,6 +60,22 @@ exports.handler = async (event) => {
     };
   }
 
+  // ── Pisahkan system message dari conversation ─────────────
+  // Kirim sebagai field `system` terpisah — format resmi OpenRouter
+  // yang support semua model, bukan dimasukin ke messages array
+  let systemPrompt = null;
+  let chatMessages = body.messages;
+
+  if (body.messages[0]?.role === 'system') {
+    systemPrompt = body.messages[0].content;
+    chatMessages = body.messages.slice(1);
+  }
+
+  // Pastikan ada minimal 1 pesan user
+  if (chatMessages.length === 0) {
+    chatMessages = [{ role: 'user', content: 'Hello' }];
+  }
+
   const referer = event.headers?.referer || event.headers?.origin || 'https://alzy-ai.netlify.app';
   let lastError = null;
 
@@ -67,6 +84,17 @@ exports.handler = async (event) => {
     console.log(`[Alzy] Trying model ${i+1}/${MODELS.length}: ${model}`);
 
     try {
+      // Build request body — kirim system sebagai field terpisah
+      const reqBody = {
+        model: model,
+        max_tokens: 512,
+        messages: chatMessages,
+      };
+      // Tambahkan system prompt sebagai top-level field jika ada
+      if (systemPrompt) {
+        reqBody.system = systemPrompt;
+      }
+
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -75,55 +103,40 @@ exports.handler = async (event) => {
           'HTTP-Referer': referer,
           'X-Title': 'Alzy AI'
         },
-        body: JSON.stringify({
-          model: model,
-          max_tokens: 1024,
-          messages: body.messages
-        })
+        body: JSON.stringify(reqBody)
       });
 
-      const text = await response.text(); // get raw text first
-      console.log(`[Alzy] Model ${model} status: ${response.status}, body preview: ${text.slice(0,200)}`);
+      const rawText = await response.text();
+      console.log(`[Alzy] Model ${model} status: ${response.status}, preview: ${rawText.slice(0, 200)}`);
 
       let data;
-      try { data = JSON.parse(text); }
-      catch(e) {
-        lastError = `${model} → invalid JSON response`;
+      try { data = JSON.parse(rawText); }
+      catch (e) {
+        lastError = `${model} → invalid JSON`;
         continue;
       }
 
-      // Skip on rate limit / not found / server error
+      // Skip error HTTP status
       if (response.status === 400 || response.status === 429 || response.status === 404 || response.status === 503) {
-        lastError = `${model} → HTTP ${response.status}`;
+        lastError = `${model} → HTTP ${response.status}: ${data?.error?.message || ''}`;
         continue;
       }
 
-      // Skip if error in body
+      // Skip error dalam body
       if (data.error) {
-        const code = String(data.error.code || data.error.status || '');
-        if (code === '400' || code === '429' || code === '404' || code === '503' || code.includes('rate') || code.includes('valid')) {
-          lastError = `${model} → ${data.error.message || code}`;
-          continue;
-        }
-        // Other errors — still return to client with model info
-        data._model_used = model;
-        return {
-          statusCode: response.status,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify(data)
-        };
+        lastError = `${model} → ${data.error.message || JSON.stringify(data.error)}`;
+        continue;
       }
 
-      // Verify there's actual content in the response
+      // Cek ada isi response
       const content = data.choices?.[0]?.message?.content;
-      if (!content && content !== 0) {
-        console.log(`[Alzy] Model ${model} returned empty content, trying next...`);
+      if (!content) {
         lastError = `${model} → empty content`;
         continue;
       }
 
       // SUCCESS
-      console.log(`[Alzy] SUCCESS with model: ${model}`);
+      console.log(`[Alzy] SUCCESS: ${model}`);
       data._model_used = model;
       data._model_index = i + 1;
 
@@ -134,7 +147,6 @@ exports.handler = async (event) => {
       };
 
     } catch (err) {
-      console.log(`[Alzy] Model ${model} threw: ${err.message}`);
       lastError = `${model} → ${err.message}`;
       continue;
     }
