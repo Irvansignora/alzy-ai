@@ -515,6 +515,91 @@ header {
 .sbtn svg { width:16px; height:16px; fill:#000; }
 .sbtn:disabled { opacity:0.3; cursor:not-allowed; transform:none!important; }
 
+/* ── MIC BUTTON ── */
+.mbtn {
+  width:38px; height:38px; flex-shrink:0;
+  border-radius:14px;
+  background:var(--glass2);
+  border:1.5px solid var(--b);
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .22s cubic-bezier(.34,1.56,.64,1);
+  font-size:17px;
+  color:var(--txt2);
+}
+.mbtn:hover { background:var(--ink4); border-color:var(--bh); color:var(--txt); transform:scale(1.08); }
+.mbtn:active { transform:scale(0.86); }
+.mbtn.recording {
+  background:rgba(255,107,107,0.15);
+  border-color:var(--coral);
+  color:var(--coral);
+  animation:micPulse 1s infinite ease-in-out;
+}
+.mbtn:disabled { opacity:0.3; cursor:not-allowed; transform:none!important; }
+
+/* ── TTS SPEAKER BUTTON ── */
+.speak-btn {
+  background:none; border:none; cursor:pointer;
+  font-size:14px; padding:2px 5px;
+  border-radius:8px; color:var(--txt3);
+  transition:all .2s; line-height:1;
+  vertical-align:middle;
+}
+.speak-btn:hover { color:var(--lime); background:rgba(200,255,0,0.08); transform:scale(1.15); }
+.speak-btn.speaking { color:var(--lime); animation:speakPulse .6s infinite alternate; }
+@keyframes speakPulse { from{transform:scale(1)} to{transform:scale(1.25)} }
+
+/* ── VOICE TOGGLE IN HEADER ── */
+.hbtn.voice-on { background:rgba(200,255,0,0.12); border-color:var(--lime); color:var(--lime); }
+
+/* ── TTS STATUS BAR ── */
+#ttsBar {
+  display:none; align-items:center; gap:8px;
+  padding:6px 16px;
+  background:rgba(200,255,0,0.05);
+  border-bottom:1px solid rgba(200,255,0,0.12);
+  font-size:11px; font-weight:600; color:var(--lime);
+  position:relative; z-index:19;
+}
+#ttsBar.on { display:flex; }
+.sound-wave { display:flex; gap:2px; align-items:center; height:16px; }
+.sw { width:3px; border-radius:2px; background:var(--lime);
+  animation:sw 0.8s infinite ease-in-out; }
+.sw:nth-child(1){height:4px;animation-delay:0s}
+.sw:nth-child(2){height:10px;animation-delay:.1s}
+.sw:nth-child(3){height:16px;animation-delay:.2s}
+.sw:nth-child(4){height:10px;animation-delay:.3s}
+.sw:nth-child(5){height:4px;animation-delay:.4s}
+.sw:nth-child(6){height:8px;animation-delay:.5s}
+.sw:nth-child(7){height:14px;animation-delay:.15s}
+@keyframes sw{0%,100%{transform:scaleY(.4);opacity:.5}50%{transform:scaleY(1);opacity:1}}
+
+@keyframes micPulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(255,107,107,0.4); }
+  50% { box-shadow:0 0 0 8px rgba(255,107,107,0); }
+}
+
+/* ── VOICE INDICATOR ── */
+#voiceBar {
+  display:none;
+  align-items:center; gap:8px;
+  padding:6px 16px;
+  background:rgba(255,107,107,0.08);
+  border-bottom:1px solid rgba(255,107,107,0.15);
+  font-size:11px; font-weight:600; color:var(--coral);
+  position:relative; z-index:19;
+}
+#voiceBar.on { display:flex; }
+.vdots { display:flex; gap:3px; align-items:center; }
+.vdot { width:4px; height:4px; border-radius:50%; background:var(--coral);
+  animation:vwave 1s infinite ease-in-out; }
+.vdot:nth-child(2){animation-delay:.15s;width:5px;height:5px;}
+.vdot:nth-child(3){animation-delay:.3s;width:6px;height:6px;}
+.vdot:nth-child(4){animation-delay:.45s;width:5px;height:5px;}
+.vdot:nth-child(5){animation-delay:.6s;width:4px;height:4px;}
+@keyframes vwave{0%,100%{transform:scaleY(0.4);opacity:.5}50%{transform:scaleY(1.6);opacity:1}}
+
+
 /* ── SCROLLABLE PANELS ── */
 .scpanel {
   flex:1; overflow-y:auto; padding:14px 12px;
@@ -719,6 +804,7 @@ header {
     </div>
     <div class="hd-acts">
       <button class="hbtn" id="progBtn" title="Progress">📊</button>
+      <button class="hbtn" id="voiceToggle" title="Toggle AI Voice">🔊</button>
       <button class="hbtn" id="clearBtn" title="Clear">🗑️</button>
     </div>
   </header>
@@ -773,9 +859,12 @@ header {
       </div>
       <div id="msgs"></div>
     </div>
+    <div id="ttsBar"><div class="sound-wave"><div class="sw"></div><div class="sw"></div><div class="sw"></div><div class="sw"></div><div class="sw"></div><div class="sw"></div><div class="sw"></div></div><span id="ttsTxt">AI sedang berbicara...</span><span id="stopTts" style="margin-left:auto;cursor:pointer;padding:2px 8px;border-radius:8px;background:rgba(200,255,0,0.1);border:1px solid rgba(200,255,0,0.25)">✕ Stop</span></div>
+    <div id="voiceBar"><div class="vdots"><div class="vdot"></div><div class="vdot"></div><div class="vdot"></div><div class="vdot"></div><div class="vdot"></div></div><span id="voiceTxt">Mendengarkan...</span><span id="stopVoice" style="margin-left:auto;cursor:pointer;padding:2px 8px;border-radius:8px;background:rgba(255,107,107,0.15);border:1px solid rgba(255,107,107,0.3)">✕ Stop</span></div>
     <div class="inputzone">
       <div class="inputrow">
         <textarea id="uInput" rows="1" placeholder="Ketik pesan…" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+        <button class="mbtn" id="mBtn" title="Voice input">🎤</button>
         <button class="sbtn" id="sBtn">
           <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </button>
@@ -1120,10 +1209,14 @@ function appendMsg(role,text){
   const g=document.createElement('div');
   g.className=`mg ${role}`;
   const time=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const msgId='msg'+Date.now()+Math.random().toString(36).slice(2);
   if(role==='ai'){
     g.innerHTML=`<div class="ai-hd"><div class="ai-av">🤖</div></div>
-      <div class="bbl">${esc(text)}</div>
-      <div class="mmeta"><span class="ltag ${lang}">${L[lang].flag} ${lang.toUpperCase()}</span><span>${time}</span></div>`;
+      <div class="bbl" id="${msgId}">${esc(text)}</div>
+      <div class="mmeta"><span class="ltag ${lang}">${L[lang].flag} ${lang.toUpperCase()}</span><span>${time}</span>
+      <button class="speak-btn" onclick="speakText('${msgId}',this)" title="Dengarkan">🔈</button></div>`;
+    // Auto speak if voice mode on
+    if(voiceMode) setTimeout(()=>speakText(msgId, g.querySelector('.speak-btn')), 300);
   }else{
     g.innerHTML=`<div class="bbl">${esc(text)}</div>
       <div class="mmeta"><span>${time}</span><span class="ltag ${lang}">${lang.toUpperCase()}</span></div>`;
@@ -1219,6 +1312,205 @@ function setupInstall(){
 }
 
 init();
+
+// ── TEXT TO SPEECH (Web Speech Synthesis) ─────────────────
+let voiceMode = localStorage.getItem('alzy_voice') !== 'off'; // default ON
+let currentUtterance = null;
+let speakingBtn = null;
+
+const ttsBar    = $('ttsBar');
+const ttsTxt    = $('ttsTxt');
+const voiceToggle = $('voiceToggle');
+
+// Voice settings per language
+const VOICE_LANG = { id:'id-ID', ja:'ja-JP', en:'en-US', de:'de-DE' };
+const VOICE_RATE = { id:1.0, ja:0.95, en:1.05, de:1.0 };
+const VOICE_PITCH= { id:1.1, ja:1.0,  en:1.05, de:0.95 };
+
+function updateVoiceToggleUI(){
+  if(voiceMode){
+    voiceToggle.textContent = '🔊';
+    voiceToggle.classList.add('voice-on');
+    voiceToggle.title = 'AI Voice: ON (tap to mute)';
+  } else {
+    voiceToggle.textContent = '🔇';
+    voiceToggle.classList.remove('voice-on');
+    voiceToggle.title = 'AI Voice: OFF (tap to enable)';
+  }
+}
+
+voiceToggle.addEventListener('click', ()=>{
+  voiceMode = !voiceMode;
+  localStorage.setItem('alzy_voice', voiceMode ? 'on' : 'off');
+  updateVoiceToggleUI();
+  if(!voiceMode) stopSpeaking();
+  showToast(voiceMode ? '🔊 AI Voice ON' : '🔇 AI Voice OFF');
+});
+
+function speakText(msgId, btn){
+  // If already speaking this message, stop it
+  if(currentUtterance && speakingBtn === btn){
+    stopSpeaking(); return;
+  }
+  stopSpeaking();
+
+  const el = document.getElementById(msgId);
+  if(!el) return;
+
+  // Strip HTML tags to get plain text
+  const plainText = el.innerText || el.textContent;
+  if(!plainText.trim()) return;
+
+  if(!window.speechSynthesis){
+    showToast('⚠️ Browser tidak support Text-to-Speech');
+    return;
+  }
+
+  const utter = new SpeechSynthesisUtterance(plainText);
+  utter.lang  = VOICE_LANG[lang]  || 'id-ID';
+  utter.rate  = VOICE_RATE[lang]  || 1.0;
+  utter.pitch = VOICE_PITCH[lang] || 1.0;
+  utter.volume = 1.0;
+
+  // Pick best matching voice for the language
+  const voices = window.speechSynthesis.getVoices();
+  const match = voices.find(v => v.lang.startsWith(VOICE_LANG[lang]?.slice(0,2)))
+             || voices.find(v => v.lang === utter.lang)
+             || null;
+  if(match) utter.voice = match;
+
+  utter.onstart = () => {
+    currentUtterance = utter;
+    speakingBtn = btn;
+    if(btn){ btn.textContent = '🔉'; btn.classList.add('speaking'); }
+    ttsTxt.textContent = `AI berbicara dalam ${L[lang].name}...`;
+    ttsBar.classList.add('on');
+  };
+
+  utter.onend = utter.onerror = () => {
+    if(btn){ btn.textContent = '🔈'; btn.classList.remove('speaking'); }
+    ttsBar.classList.remove('on');
+    currentUtterance = null; speakingBtn = null;
+  };
+
+  currentUtterance = utter;
+  window.speechSynthesis.speak(utter);
+}
+
+function stopSpeaking(){
+  if(window.speechSynthesis) window.speechSynthesis.cancel();
+  if(speakingBtn){ speakingBtn.textContent = '🔈'; speakingBtn.classList.remove('speaking'); }
+  ttsBar.classList.remove('on');
+  currentUtterance = null; speakingBtn = null;
+}
+
+$('stopTts').addEventListener('click', stopSpeaking);
+
+// Stop speaking when switching lang/tab
+document.querySelectorAll('.tab, .lp').forEach(el=>{
+  el.addEventListener('click', stopSpeaking);
+});
+
+// Preload voices (needed for some browsers)
+window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+
+// Init voice toggle UI
+updateVoiceToggleUI();
+
+
+// ── VOICE INPUT (Web Speech API) ──────────────────────────
+const voiceBar = $('voiceBar');
+const voiceTxt = $('voiceTxt');
+const mBtn     = $('mBtn');
+let recognition = null;
+let isRecording = false;
+
+// Map lang code ke BCP-47
+const LANG_CODE = { id:'id-ID', ja:'ja-JP', en:'en-US', de:'de-DE' };
+
+function initSpeech(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+    mBtn.title = 'Voice tidak didukung browser ini';
+    mBtn.style.opacity = '0.3';
+    mBtn.style.cursor  = 'not-allowed';
+    return null;
+  }
+  const r = new SR();
+  r.continuous      = false;
+  r.interimResults  = true;
+  r.maxAlternatives = 1;
+
+  r.onstart = () => {
+    isRecording = true;
+    mBtn.classList.add('recording');
+    mBtn.textContent = '⏹️';
+    voiceBar.classList.add('on');
+    voiceTxt.textContent = 'Mendengarkan... (bicara sekarang)';
+  };
+
+  r.onresult = (e) => {
+    let interim = '', final = '';
+    for(let i = e.resultIndex; i < e.results.length; i++){
+      const t = e.results[i][0].transcript;
+      if(e.results[i].isFinal) final += t;
+      else interim += t;
+    }
+    // Show interim in input box as preview
+    if(interim) uInput.value = interim;
+    if(final){
+      uInput.value = final;
+      autoResize();
+      sBtn.disabled = !final.trim() || loading;
+    }
+  };
+
+  r.onerror = (e) => {
+    const msgs = {
+      'not-allowed'   : '⚠️ Izin mic ditolak. Cek pengaturan browser.',
+      'no-speech'     : '⚠️ Tidak ada suara terdeteksi.',
+      'network'       : '⚠️ Error jaringan saat voice recognition.',
+      'audio-capture' : '⚠️ Tidak ada mikrofon ditemukan.',
+    };
+    showToast(msgs[e.error] || '⚠️ Voice error: ' + e.error);
+    stopRecording();
+  };
+
+  r.onend = () => {
+    stopRecording();
+    // Auto send if there's text and not manually stopped
+    const val = uInput.value.trim();
+    if(val && !loading) sendMsg();
+  };
+
+  return r;
+}
+
+function startRecording(){
+  if(!recognition) recognition = initSpeech();
+  if(!recognition) return;
+  if(isRecording){ stopRecording(); return; }
+  recognition.lang = LANG_CODE[lang] || 'id-ID';
+  try { recognition.start(); }
+  catch(e){ showToast('⚠️ Tidak bisa mulai voice input'); }
+}
+
+function stopRecording(){
+  isRecording = false;
+  mBtn.classList.remove('recording');
+  mBtn.textContent = '🎤';
+  voiceBar.classList.remove('on');
+  if(recognition){ try{ recognition.stop(); }catch(e){} }
+}
+
+mBtn.addEventListener('click', startRecording);
+$('stopVoice').addEventListener('click', stopRecording);
+
+// Stop recording saat pindah tab / bahasa
+document.querySelectorAll('.tab, .lp').forEach(el=>{
+  el.addEventListener('click', ()=>{ if(isRecording) stopRecording(); });
+});
+
 </script>
 </body>
 </html>
