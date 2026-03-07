@@ -1,22 +1,19 @@
 // netlify/functions/chat.js
 // Proxy ke OpenRouter dengan AUTO-FALLBACK model
-// Kalau model 1 kena rate limit (429), otomatis coba model berikutnya
 
 // ============================================================
-// DAFTAR MODEL — urutan prioritas, free semua
-// Tambah / hapus / ubah urutan sesuai kebutuhan
+// DAFTAR MODEL — urutan prioritas, semua free & aktif
 // ============================================================
 const MODELS = [
-  'meta-llama/llama-3.3-70b-instruct:free',   // 1. Llama 3.3 70B - terbaik
-  'mistralai/mistral-7b-instruct:free',         // 2. Mistral 7B - cepat
-  'google/gemma-3-4b-it:free',                  // 3. Gemma 3 - Google
-  'deepseek/deepseek-r1:free',                  // 4. DeepSeek R1 - powerful
-  'qwen/qwen2.5-7b-instruct:free',              // 5. Qwen 2.5 - backup
+  'meta-llama/llama-3.1-8b-instruct:free',     // 1. Llama 3.1 8B - stabil
+  'meta-llama/llama-3.2-3b-instruct:free',      // 2. Llama 3.2 3B - ringan
+  'google/gemma-3-4b-it:free',                  // 3. Gemma 3 4B - Google
+  'google/gemma-3-1b-it:free',                  // 4. Gemma 3 1B - paling ringan
+  'qwen/qwen2.5-7b-instruct:free',              // 5. Qwen 2.5 7B - backup
 ];
 
 exports.handler = async (event) => {
 
-  // CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -42,9 +39,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        error: 'OPENROUTER_API_KEY belum diset di Netlify. Pergi ke: Site configuration → Environment variables → Add variable → OPENROUTER_API_KEY'
-      })
+      body: JSON.stringify({ error: 'OPENROUTER_API_KEY belum diset di Netlify Environment Variables.' })
     };
   }
 
@@ -92,26 +87,29 @@ exports.handler = async (event) => {
 
       const data = await response.json();
 
-      // Kalau 429 (rate limit) atau 503 (unavailable) → coba model berikutnya
-      if (response.status === 429 || response.status === 503) {
-        console.log(`Model ${model} kena limit (${response.status}), coba model berikutnya...`);
+      // Skip ke model berikutnya kalau rate limit / not found / unavailable
+      if (response.status === 429 || response.status === 503 || response.status === 404) {
+        console.log(`Model [${i+1}] ${model} skip (${response.status}), coba berikutnya...`);
         lastError = `${model} → ${response.status}`;
         continue;
       }
 
-      // Kalau ada error dari provider di response body → coba berikutnya
-      if (data.error && (data.error.code === 429 || data.error.code === 'rate_limit_exceeded')) {
-        console.log(`Model ${model} rate limit dari provider, coba berikutnya...`);
-        lastError = `${model} → provider rate limit`;
-        continue;
+      // Skip kalau provider error di body
+      if (data.error) {
+        const code = data.error.code || data.error.status;
+        if (code === 429 || code === 404 || code === 503 || String(code).includes('rate')) {
+          console.log(`Model [${i+1}] ${model} error dari provider, coba berikutnya...`);
+          lastError = `${model} → ${JSON.stringify(data.error)}`;
+          continue;
+        }
       }
 
-      // Sukses! Tambahkan info model yang dipakai ke response
+      // Sukses!
       data._model_used = model;
       data._model_index = i + 1;
 
       return {
-        statusCode: response.status,
+        statusCode: 200,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
@@ -120,7 +118,7 @@ exports.handler = async (event) => {
       };
 
     } catch (err) {
-      console.log(`Model ${model} error: ${err.message}`);
+      console.log(`Model [${i+1}] ${model} catch error: ${err.message}`);
       lastError = `${model} → ${err.message}`;
       continue;
     }
@@ -131,7 +129,7 @@ exports.handler = async (event) => {
     statusCode: 429,
     headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     body: JSON.stringify({
-      error: `Semua model sedang kena rate limit. Coba lagi dalam beberapa menit. (${lastError})`
+      error: `Semua model sedang sibuk. Coba lagi dalam beberapa menit. Detail: ${lastError}`
     })
   };
 };
