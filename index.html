@@ -1141,11 +1141,23 @@ async function sendAI(system,isOpener=false){
   try{
     const data=await callAI(system,msgs);
     removeTyping(tid);
-    const text=data.choices?.[0]?.message?.content||'';
+    console.log('[Alzy] Opener response:', JSON.stringify(data).slice(0,500));
+
+    let text = '';
+    const choice = data.choices?.[0];
+    if(choice){
+      const cnt = choice.message?.content;
+      if(typeof cnt === 'string') text = cnt;
+      else if(Array.isArray(cnt)) text = cnt.map(c=>c.text||c.content||'').join('');
+      else if(cnt) text = String(cnt);
+    }
+    if(!text) text = data.choices?.[0]?.text || '';
+    if(!text){ appendMsg('ai','⚠️ AI tidak merespons. Coba mulai ulang sesi.'); return; }
+
     hist.push({role:'assistant',content:text});
     const{main,fb}=parseFB(text);
     appendMsg('ai',main); if(fb)appendFBCard(fb); scrollDown();
-  }catch(e){ removeTyping(tid); appendMsg('ai','⚠️ Gagal konek. Cek koneksi internet kamu.'); }
+  }catch(e){ removeTyping(tid); console.error('[Alzy] Opener error:',e); appendMsg('ai','⚠️ Gagal konek: '+e.message); }
   finally{ loading=false; sBtn.disabled=false; }
 }
 
@@ -1164,15 +1176,42 @@ async function sendMsg(txt){
   try{
     const data=await callAI(sys,hist);
     removeTyping(tid);
+
+    // Debug: log full response to console
+    console.log('[Alzy] API response:', JSON.stringify(data).slice(0,500));
+
+    // Handle error status
     if(!data._ok){
-      appendMsg('ai',`⚠️ Error ${data._status}: ${data.error?.message||'Unknown error. Cek API key di config.'}`);
+      const errMsg = data.error?.message || data.error?.code || JSON.stringify(data.error) || 'Unknown error';
+      appendMsg('ai',`⚠️ Error ${data._status}: ${errMsg}`);
       return;
     }
-    const reply=data.choices?.[0]?.message?.content||'';
+
+    // Extract content — handle both string and array content types
+    let reply = '';
+    const choice = data.choices?.[0];
+    if(choice){
+      const cnt = choice.message?.content;
+      if(typeof cnt === 'string') reply = cnt;
+      else if(Array.isArray(cnt)) reply = cnt.map(c=>c.text||c.content||'').join('');
+      else if(cnt) reply = String(cnt);
+    }
+
+    if(!reply){
+      // Fallback: try to get any text from response
+      reply = data.choices?.[0]?.text || data.output || '';
+    }
+
+    if(!reply){
+      console.warn('[Alzy] Empty reply. Full data:', data);
+      appendMsg('ai','⚠️ AI tidak memberikan respons. Coba kirim pesan lagi.');
+      return;
+    }
+
     hist.push({role:'assistant',content:reply});
     const{main,fb}=parseFB(reply);
     appendMsg('ai',main); if(fb)appendFBCard(fb); scrollDown();
-  }catch(e){ removeTyping(tid); appendMsg('ai','⚠️ Tidak bisa terhubung.'); }
+  }catch(e){ removeTyping(tid); console.error('[Alzy] Error:',e); appendMsg('ai','⚠️ Tidak bisa terhubung: '+e.message); }
   finally{ loading=false; sBtn.disabled=false; }
 }
 
