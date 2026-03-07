@@ -2,11 +2,11 @@
 // Proxy ke OpenRouter dengan AUTO-FALLBACK model
 
 const MODELS = [
-  'meta-llama/llama-3.3-70b-instruct:free',   // Llama terbaru, kuat
-  'google/gemma-3-27b-it:free',                // Gemma 3 27B stabil
-  'google/gemma-3-12b-it:free',                // Gemma 3 12B fallback
+  'openrouter/auto',                               // OpenRouter auto-select best model
+  'meta-llama/llama-3.3-70b-instruct:free',        // Llama 3.3 70B
+  'google/gemma-3-27b-it:free',                    // Gemma 3 27B
   'mistralai/mistral-small-3.1-24b-instruct:free', // Mistral Small 3.1
-  'google/gemma-3-4b-it:free',                 // Fallback ringan
+  'openrouter/free',                               // Last resort: OpenRouter random free model
 ];
 
 exports.handler = async (event) => {
