@@ -1,15 +1,12 @@
 // netlify/functions/chat.js
 // Proxy ke OpenRouter dengan AUTO-FALLBACK model
 
-// ============================================================
-// DAFTAR MODEL — urutan prioritas, semua free & aktif
-// ============================================================
 const MODELS = [
-  'meta-llama/llama-3.1-8b-instruct:free',     // 1. Llama 3.1 8B - stabil
-  'meta-llama/llama-3.2-3b-instruct:free',      // 2. Llama 3.2 3B - ringan
-  'google/gemma-3-4b-it:free',                  // 3. Gemma 3 4B - Google
-  'google/gemma-3-1b-it:free',                  // 4. Gemma 3 1B - paling ringan
-  'qwen/qwen2.5-7b-instruct:free',              // 5. Qwen 2.5 7B - backup
+  'meta-llama/llama-3.1-8b-instruct:free',
+  'meta-llama/llama-3.2-3b-instruct:free',
+  'google/gemma-3-4b-it:free',
+  'google/gemma-3-1b-it:free',
+  'qwen/qwen2.5-7b-instruct:free',
 ];
 
 exports.handler = async (event) => {
@@ -65,9 +62,9 @@ exports.handler = async (event) => {
   const referer = event.headers?.referer || event.headers?.origin || 'https://alzy-ai.netlify.app';
   let lastError = null;
 
-  // ── AUTO FALLBACK LOOP ──────────────────────────────────
   for (let i = 0; i < MODELS.length; i++) {
     const model = MODELS[i];
+    console.log(`[Alzy] Trying model ${i+1}/${MODELS.length}: ${model}`);
 
     try {
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -80,56 +77,74 @@ exports.handler = async (event) => {
         },
         body: JSON.stringify({
           model: model,
-          max_tokens: body.max_tokens || 1024,
+          max_tokens: 1024,
           messages: body.messages
         })
       });
 
-      const data = await response.json();
+      const text = await response.text(); // get raw text first
+      console.log(`[Alzy] Model ${model} status: ${response.status}, body preview: ${text.slice(0,200)}`);
 
-      // Skip ke model berikutnya kalau rate limit / not found / unavailable
-      if (response.status === 429 || response.status === 503 || response.status === 404) {
-        console.log(`Model [${i+1}] ${model} skip (${response.status}), coba berikutnya...`);
-        lastError = `${model} → ${response.status}`;
+      let data;
+      try { data = JSON.parse(text); }
+      catch(e) {
+        lastError = `${model} → invalid JSON response`;
         continue;
       }
 
-      // Skip kalau provider error di body
-      if (data.error) {
-        const code = data.error.code || data.error.status;
-        if (code === 429 || code === 404 || code === 503 || String(code).includes('rate')) {
-          console.log(`Model [${i+1}] ${model} error dari provider, coba berikutnya...`);
-          lastError = `${model} → ${JSON.stringify(data.error)}`;
-          continue;
-        }
+      // Skip on rate limit / not found / server error
+      if (response.status === 429 || response.status === 404 || response.status === 503) {
+        lastError = `${model} → HTTP ${response.status}`;
+        continue;
       }
 
-      // Sukses!
+      // Skip if error in body
+      if (data.error) {
+        const code = String(data.error.code || data.error.status || '');
+        if (code === '429' || code === '404' || code === '503' || code.includes('rate')) {
+          lastError = `${model} → ${data.error.message || code}`;
+          continue;
+        }
+        // Other errors — still return to client with model info
+        data._model_used = model;
+        return {
+          statusCode: response.status,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify(data)
+        };
+      }
+
+      // Verify there's actual content in the response
+      const content = data.choices?.[0]?.message?.content;
+      if (!content && content !== 0) {
+        console.log(`[Alzy] Model ${model} returned empty content, trying next...`);
+        lastError = `${model} → empty content`;
+        continue;
+      }
+
+      // SUCCESS
+      console.log(`[Alzy] SUCCESS with model: ${model}`);
       data._model_used = model;
       data._model_index = i + 1;
 
       return {
         statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
         body: JSON.stringify(data)
       };
 
     } catch (err) {
-      console.log(`Model [${i+1}] ${model} catch error: ${err.message}`);
+      console.log(`[Alzy] Model ${model} threw: ${err.message}`);
       lastError = `${model} → ${err.message}`;
       continue;
     }
   }
 
-  // Semua model gagal
   return {
     statusCode: 429,
     headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     body: JSON.stringify({
-      error: `Semua model sedang sibuk. Coba lagi dalam beberapa menit. Detail: ${lastError}`
+      error: `Semua model sedang sibuk. Coba lagi dalam beberapa menit. (${lastError})`
     })
   };
 };
