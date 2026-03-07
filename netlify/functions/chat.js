@@ -59,6 +59,40 @@ exports.handler = async (event) => {
     };
   }
 
+  // ── FIX: Handle system message ────────────────────────────
+  // Pisahkan system message dari conversation messages.
+  // Banyak free model di OpenRouter TIDAK support role:"system"
+  // dan akan return 400. Solusinya: inject system prompt ke
+  // awal pesan pertama sebagai role:"user" prefix.
+
+  let systemPrompt = null;
+  let conversationMessages = body.messages;
+
+  // Cek apakah ada system message di index 0
+  if (body.messages[0]?.role === 'system') {
+    systemPrompt = body.messages[0].content;
+    conversationMessages = body.messages.slice(1); // buang system msg
+  }
+
+  // Kalau ada system prompt, inject ke user message pertama
+  let finalMessages = conversationMessages;
+  if (systemPrompt && conversationMessages.length > 0) {
+    finalMessages = conversationMessages.map((msg, idx) => {
+      if (idx === 0 && msg.role === 'user') {
+        return {
+          role: 'user',
+          content: `[SYSTEM INSTRUCTION - follow this throughout the conversation]\n${systemPrompt}\n\n[USER MESSAGE]\n${msg.content}`
+        };
+      }
+      return msg;
+    });
+  }
+
+  // Fallback: kalau tidak ada pesan setelah system, buat pesan starter
+  if (finalMessages.length === 0) {
+    finalMessages = [{ role: 'user', content: systemPrompt || 'Hello' }];
+  }
+
   const referer = event.headers?.referer || event.headers?.origin || 'https://alzy-ai.netlify.app';
   let lastError = null;
 
@@ -78,7 +112,7 @@ exports.handler = async (event) => {
         body: JSON.stringify({
           model: model,
           max_tokens: 1024,
-          messages: body.messages
+          messages: finalMessages  // pakai messages yang sudah di-fix
         })
       });
 
@@ -92,16 +126,19 @@ exports.handler = async (event) => {
         continue;
       }
 
-      // Skip on rate limit / not found / server error
-      if (response.status === 429 || response.status === 404 || response.status === 503) {
-        lastError = `${model} → HTTP ${response.status}`;
+      // ── FIX: Tambahkan 400 ke daftar skip ────────────────
+      // Error 400 biasanya berarti model tidak support format
+      // request (misalnya system role), jadi coba model berikutnya
+      if (response.status === 400 || response.status === 429 || response.status === 404 || response.status === 503) {
+        lastError = `${model} → HTTP ${response.status}: ${data.error?.message || ''}`;
+        console.log(`[Alzy] Skipping model due to HTTP ${response.status}`);
         continue;
       }
 
       // Skip if error in body
       if (data.error) {
         const code = String(data.error.code || data.error.status || '');
-        if (code === '429' || code === '404' || code === '503' || code.includes('rate')) {
+        if (code === '400' || code === '429' || code === '404' || code === '503' || code.includes('rate')) {
           lastError = `${model} → ${data.error.message || code}`;
           continue;
         }
