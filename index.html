@@ -1476,16 +1476,20 @@ function initSpeech(){
     return null;
   }
   const r = new SR();
-  r.continuous      = false;
+  r.continuous      = true;   // FIX: jangan stop saat ada jeda ngomong
   r.interimResults  = true;
   r.maxAlternatives = 1;
 
+  let manualStop = false; // FIX: flag untuk bedain stop manual vs auto
+  r._setManualStop = (val) => { manualStop = val; };
+
   r.onstart = () => {
     isRecording = true;
+    manualStop = false;
     mBtn.classList.add('recording');
     mBtn.textContent = '⏹️';
     voiceBar.classList.add('on');
-    voiceTxt.textContent = 'Mendengarkan... (bicara sekarang)';
+    voiceTxt.textContent = 'Mendengarkan... tekan ⏹️ saat selesai bicara';
   };
 
   r.onresult = (e) => {
@@ -1516,10 +1520,15 @@ function initSpeech(){
   };
 
   r.onend = () => {
-    stopRecording();
-    // Auto send if there's text and not manually stopped
+    // FIX: hanya kirim kalau user yang stop manual (tekan tombol stop)
+    // Kalau stop karena jeda/timeout browser, jangan langsung kirim
     const val = uInput.value.trim();
-    if(val && !loading) sendMsg();
+    if(manualStop && val && !loading){
+      stopRecording();
+      sendMsg();
+    } else {
+      stopRecording();
+    }
   };
 
   return r;
@@ -1528,13 +1537,22 @@ function initSpeech(){
 function startRecording(){
   if(!recognition) recognition = initSpeech();
   if(!recognition) return;
-  if(isRecording){ stopRecording(); return; }
+  if(isRecording){
+    // User tekan stop → set manualStop = true supaya onend kirim pesan
+    if(recognition._setManualStop) recognition._setManualStop(true);
+    return;
+  }
   recognition.lang = LANG_CODE[lang] || 'id-ID';
   try { recognition.start(); }
   catch(e){ showToast('⚠️ Tidak bisa mulai voice input'); }
 }
 
-function stopRecording(){
+function stopRecording(shouldSend = false){
+  if(recognition && isRecording){
+    // Set flag sebelum stop supaya onend tahu ini manual stop
+    if(recognition._manualStopFlag !== undefined)
+      recognition._manualStopFlag = shouldSend;
+  }
   isRecording = false;
   mBtn.classList.remove('recording');
   mBtn.textContent = '🎤';
@@ -1543,7 +1561,10 @@ function stopRecording(){
 }
 
 mBtn.addEventListener('click', startRecording);
-$('stopVoice').addEventListener('click', stopRecording);
+$('stopVoice').addEventListener('click', ()=>{
+  if(recognition?._setManualStop) recognition._setManualStop(true);
+  stopRecording();
+});
 
 // Stop recording saat pindah tab / bahasa
 document.querySelectorAll('.tab, .lp').forEach(el=>{
