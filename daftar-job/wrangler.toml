@@ -1,0 +1,23 @@
+name = "daftar-job"
+main = "src/worker.js"
+compatibility_date = "2026-11-01"
+
+routes = [
+  { pattern = "daftar-job.iranza.com", custom_domain = true }
+]
+
+[vars]
+# Google Sheet "Daftar Lowongan" (Kategori | Nama Job | Status | Keterangan)
+JOBS_SHEET_ID = "1irCT-EoNFjdlD5LYPqeD5bdX5QbwRI2jYqzGdgptaDc"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "daftar-job"
+database_id = "b0f80f22-d061-4a80-ae1e-6ae79ea75b98"
+
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = true
+
+# Secret: wrangler secret put EXPORT_KEY
