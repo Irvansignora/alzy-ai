@@ -10,6 +10,10 @@ routes = [
 # Google Sheet "Daftar Lowongan" (Kategori | Nama Job | Status | Keterangan).
 # Kalau belum di-share "Siapa saja yang memiliki link", form pakai DEFAULT_JOBS di src/worker.js.
 JOBS_SHEET_ID = "1AZL6lB-AR_ireCJWKyE2a4k_p_txXSylb_TfP6TT-no"
+# Halaman /admin dikunci Cloudflare Access (app "daftar-job admin"); worker juga cek JWT-nya
+ACCESS_TEAM = "square-pond-fb4a.cloudflareaccess.com"
+ACCESS_AUD = "2db92d99a632eb1f89f5e901c219d0f7c33bfcee59a0375f2f696961b4fe8704"
+ADMIN_EMAILS = "irvansignora@gmail.com,irvansignora2@gmail.com"
 
 [[d1_databases]]
 binding = "DB"

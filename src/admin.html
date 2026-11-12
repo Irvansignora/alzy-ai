@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1e3a8a">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin Pendaftar</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
+    --brand:#c8102e; --brand-2:#1e3a8a; --ok:#15803d; --err:#dc2626; --warn:#b45309;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.45;padding-bottom:96px}
+  .top{background:linear-gradient(135deg,var(--brand-2),#0b1d4f);color:#fff;padding:16px 16px 14px}
+  .top .row{display:flex;align-items:center;justify-content:space-between;gap:8px;max-width:900px;margin:0 auto}
+  .top h1{font-size:18px}
+  .top small{display:block;font-size:12px;opacity:.75}
+  .top a{color:#fff;font-size:13px;opacity:.85;text-decoration:none;border:1px solid rgba(255,255,255,.35);padding:6px 10px;border-radius:999px;white-space:nowrap}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:900px;margin:12px auto 0}
+  .stat{background:rgba(255,255,255,.12);border-radius:12px;padding:8px 10px}
+  .stat b{display:block;font-size:20px;line-height:1.1}
+  .stat span{font-size:11px;opacity:.8}
+  .wrap{max-width:900px;margin:0 auto;padding:12px}
+  .tools{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0 8px}
+  input[type=search]{width:100%;font:inherit;font-size:16px;padding:11px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff}
+  input[type=search]:focus{outline:none;border-color:var(--brand-2);box-shadow:0 0 0 4px rgba(30,58,138,.12)}
+  .chips{display:flex;gap:6px;margin-top:8px;overflow-x:auto;scrollbar-width:none}
+  .chips button{flex:none;font:inherit;font-size:13px;font-weight:600;padding:7px 12px;border-radius:999px;border:1.5px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  .chips button.on{background:var(--brand-2);border-color:var(--brand-2);color:#fff}
+  .chips .sel{margin-left:auto;color:var(--brand-2)}
+  .list{display:grid;gap:10px}
+  .item{background:var(--card);border:1.5px solid transparent;border-radius:16px;padding:12px 14px;box-shadow:0 4px 14px rgba(15,23,42,.05);display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
+  .item.dobel{border-color:#fcd34d;background:#fffbeb}
+  .item.picked{border-color:var(--brand-2)}
+  .item input[type=checkbox]{width:22px;height:22px;margin-top:2px;accent-color:var(--brand-2)}
+  .item h3{font-size:15px;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+  .badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#e0e7ff;color:var(--brand-2)}
+  .badge.g{background:#fce7f3;color:#9d174d}
+  .badge.d{background:#fde68a;color:#78350f}
+  .job{font-size:14px;font-weight:600;color:var(--brand-2)}
+  .meta{grid-column:2;font-size:13px;color:var(--muted);display:grid;gap:2px}
+  .meta a{color:inherit}
+  .meta .addr{overflow-wrap:anywhere}
+  .acts{grid-column:2;display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .acts a,.acts button{font:inherit;font-size:13px;font-weight:600;padding:7px 12px;border-radius:10px;border:0;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+  .acts .f{background:#eef2ff;color:var(--brand-2)}
+  .acts .wa{background:#dcfce7;color:var(--ok)}
+  .acts .del{background:#fef2f2;color:var(--err);margin-left:auto}
+  .acts .none{background:#f1f5f9;color:#94a3b8;cursor:default}
+  .empty{text-align:center;color:var(--muted);padding:40px 16px;font-size:14px}
+  .bar{position:fixed;left:0;right:0;bottom:0;z-index:10;background:#fff;border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:none;gap:10px;align-items:center;justify-content:center;box-shadow:0 -6px 20px rgba(15,23,42,.08)}
+  .bar.show{display:flex}
+  .bar span{font-size:14px;font-weight:600}
+  .bar button{font:inherit;font-weight:700;font-size:15px;padding:12px 16px;border:0;border-radius:12px;cursor:pointer}
+  .bar .x{background:#f1f5f9;color:var(--ink)}
+  .bar .go{background:var(--err);color:#fff}
+  .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw;text-align:center}
+  .toast.show{opacity:1}
+  .note{font-size:12px;color:var(--muted);margin:2px 0 10px}
+  @media (min-width:700px){ .list{grid-template-columns:1fr 1fr} }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="row">
+    <div><h1>Admin Pendaftar</h1><small id="who">daftar-job.iranza.com</small></div>
+    <a href="/cdn-cgi/access/logout">Keluar</a>
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="sAll">–</b><span>Total</span></div>
+    <div class="stat"><b id="sTG">–</b><span>TG</span></div>
+    <div class="stat"><b id="sGJ">–</b><span>Gijinkoku</span></div>
+    <div class="stat"><b id="sDup">–</b><span>Dobel</span></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="tools">
+    <input type="search" id="q" placeholder="Cari nama, no HP, email, job…" autocomplete="off">
+    <div class="chips" id="chips">
+      <button type="button" data-f="all" class="on">Semua</button>
+      <button type="button" data-f="TG">TG</button>
+      <button type="button" data-f="Gijinkoku">Gijinkoku</button>
+      <button type="button" data-f="dobel">⚠ Dobel</button>
+      <button type="button" class="sel" id="selAll">Pilih semua</button>
+    </div>
+  </div>
+  <p class="note">Kartu kuning = no HP / email muncul lebih dari sekali. Data yang dihapus di sini ikut hilang dari spreadsheet saat refresh berikutnya (±1 jam).</p>
+  <div class="list" id="list"><div class="empty">Memuat data…</div></div>
+</main>
+
+<div class="bar" id="bar">
+  <span id="barTxt">0 dipilih</span>
+  <button type="button" class="x" id="clear">Batal</button>
+  <button type="button" class="go" id="delSel">Hapus</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  let ROWS = [], filter = 'all';
+  const picked = new Set();
+
+  function toast(msg){
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+  function el(tag, cls, text){
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function waLink(hp){
+    const d = String(hp).replace(/\D/g, '');
+    return 'https://wa.me/' + (d.startsWith('0') ? '62' + d.slice(1) : d);
+  }
+
+  async function load(){
+    try {
+      const r = await fetch('/admin/api/list', { headers: { Accept: 'application/json' } });
+      const res = await r.json();
+      if (!res.ok) throw new Error(res.error || 'Gagal memuat data.');
+      ROWS = res.rows;
+      $('who').textContent = 'Login sebagai ' + res.admin;
+      for (const id of [...picked]) if (!ROWS.some(x => x.id === id)) picked.delete(id);
+      render();
+    } catch (e) {
+      $('list').innerHTML = '';
+      $('list').append(el('div', 'empty', 'Gagal memuat data. Coba muat ulang halaman. (' + e.message + ')'));
+    }
+  }
+
+  function visible(){
+    const q = $('q').value.trim().toLowerCase();
+    return ROWS.filter(r => {
+      if (filter === 'dobel' && !r.dobel) return false;
+      if ((filter === 'TG' || filter === 'Gijinkoku') && r.kategori !== filter) return false;
+      if (!q) return true;
+      return [r.nama, r.hp, r.email, r.job, r.alamat, r.level].some(v => String(v).toLowerCase().includes(q));
+    });
+  }
+
+  function render(){
+    $('sAll').textContent = ROWS.length;
+    $('sTG').textContent = ROWS.filter(r => r.kategori === 'TG').length;
+    $('sGJ').textContent = ROWS.filter(r => r.kategori === 'Gijinkoku').length;
+    $('sDup').textContent = ROWS.filter(r => r.dobel).length;
+
+    const rows = visible();
+    const list = $('list');
+    list.innerHTML = '';
+    if (!rows.length) list.append(el('div', 'empty', ROWS.length ? 'Tidak ada data yang cocok.' : 'Belum ada pendaftar.'));
+
+    rows.forEach(r => {
+      const card = el('div', 'item' + (r.dobel ? ' dobel' : '') + (picked.has(r.id) ? ' picked' : ''));
+      const cb = el('input');
+      cb.type = 'checkbox'; cb.checked = picked.has(r.id);
+      cb.setAttribute('aria-label', 'Pilih ' + r.nama);
+      cb.addEventListener('change', () => { cb.checked ? picked.add(r.id) : picked.delete(r.id); card.classList.toggle('picked', cb.checked); syncBar(); });
+
+      const head = el('div');
+      const h = el('h3', null, r.nama);
+      h.append(el('span', 'badge' + (r.kategori === 'Gijinkoku' ? ' g' : ''), r.kategori));
+      if (r.dobel) h.append(el('span', 'badge d', 'Dobel'));
+      head.append(h, el('div', 'job', r.job));
+
+      const meta = el('div', 'meta');
+      const hp = el('a', null, '📱 ' + r.hp); hp.href = 'tel:' + r.hp;
+      const em = el('a', null, '✉️ ' + r.email); em.href = 'mailto:' + r.email;
+      meta.append(hp, em, el('div', null, '🗣️ ' + r.level), el('div', 'addr', '📍 ' + r.alamat), el('div', null, '🕒 ' + r.created_at + ' WIB'));
+
+      const acts = el('div', 'acts');
+      const file = (url, label) => {
+        if (!url) return el('span', 'none f', label + ' –');
+        const a = el('a', 'f', label); a.href = url; a.target = '_blank'; a.rel = 'noopener';
+        return a;
+      };
+      const wa = el('a', 'wa', 'WhatsApp'); wa.href = waLink(r.hp); wa.target = '_blank'; wa.rel = 'noopener';
+      const del = el('button', 'del', 'Hapus'); del.type = 'button';
+      del.addEventListener('click', () => remove([r.id], r.nama));
+      acts.append(file(r.cv, '📄 CV'), file(r.sertifikat, '🎓 Sertifikat'), wa, del);
+
+      card.append(cb, head, meta, acts);
+      list.append(card);
+    });
+    syncBar();
+  }
+
+  function syncBar(){
+    $('bar').classList.toggle('show', picked.size > 0);
+    $('barTxt').textContent = picked.size + ' dipilih';
+  }
+
+  async function remove(ids, label){
+    const msg = ids.length === 1
+      ? 'Hapus data "' + label + '" beserta CV & sertifikatnya?\n\nData yang dihapus tidak bisa dikembalikan.'
+      : 'Hapus ' + ids.length + ' data terpilih beserta CV & sertifikatnya?\n\nData yang dihapus tidak bisa dikembalikan.';
+    if (!confirm(msg)) return;
+    try {
+      const r = await fetch('/admin/api/delete', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids })
+      });
+      const res = await r.json();
+      if (!res.ok) throw new Error(res.error || 'Gagal menghapus.');
+      ids.forEach(id => picked.delete(id));
+      toast(res.deleted + ' data dihapus');
+      load();
+    } catch (e) {
+      toast('Gagal: ' + e.message);
+    }
+  }
+
+  $('q').addEventListener('input', render);
+  $('chips').addEventListener('click', e => {
+    const b = e.target.closest('button[data-f]');
+    if (!b) return;
+    filter = b.dataset.f;
+    [...$('chips').querySelectorAll('[data-f]')].forEach(x => x.classList.toggle('on', x === b));
+    render();
+  });
+  $('selAll').addEventListener('click', () => {
+    const rows = visible();
+    const all = rows.length && rows.every(r => picked.has(r.id));
+    rows.forEach(r => all ? picked.delete(r.id) : picked.add(r.id));
+    render();
+  });
+  $('clear').addEventListener('click', () => { picked.clear(); render(); });
+  $('delSel').addEventListener('click', () => remove([...picked]));
+  load();
+</script>
+</body>
+</html>
