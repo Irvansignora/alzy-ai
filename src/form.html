@@ -239,25 +239,58 @@
     sertifikat: () => fileOk('sertifikat', needCert())
   };
 
-  /* ---- upload file ---- */
+  /* ---- upload file ----
+     File langsung dibaca ke memori begitu dipilih. Di Android, file dari Google Drive /
+     WhatsApp / folder cloud sering kehilangan izin baca sebelum tombol Kirim ditekan,
+     dan browser lalu gagal mengirim ("Failed to fetch"). Dengan salinan di memori,
+     pengiriman tidak bergantung lagi pada file aslinya. */
   const MAX = 5 * 1024 * 1024;
+  const FILES = { cv: null, sertifikat: null };   // { blob, name, size } atau { error }
   const needCert = () => /^(JLPT|JFT)/.test(form.elements.level.value);
-  function fileOk(n, required){
+  function kind(b){
+    if (b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46) return ['pdf', 'application/pdf'];
+    if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return ['jpg', 'image/jpeg'];
+    if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return ['png', 'image/png'];
+    return null;
+  }
+  async function readPicked(n){
     const f = form.elements[n].files[0];
+    if (!f) { FILES[n] = null; return; }
+    if (f.size > MAX) { FILES[n] = { error: 'Ukuran file maksimal 5 MB.', name: f.name }; return; }
+    FILES[n] = { loading: true, name: f.name };
+    showFile(n);
+    try {
+      const buf = await f.arrayBuffer();
+      if (!buf.byteLength) throw new Error('kosong');
+      const k = kind(new Uint8Array(buf, 0, Math.min(8, buf.byteLength)));
+      if (!k) { FILES[n] = { error: 'Format harus PDF, JPG, atau PNG.', name: f.name }; return; }
+      FILES[n] = { blob: new Blob([buf], { type: k[1] }), name: f.name.replace(/[^\w.\- ]+/g, '_').slice(-80) || (n + '.' + k[0]), size: buf.byteLength };
+    } catch (e) {
+      FILES[n] = { error: 'File tidak bisa dibaca. Simpan dulu filenya ke HP (Download), lalu pilih ulang dari folder Download / File Manager.', name: f.name };
+    }
+  }
+  function fileOk(n, required){
+    const f = FILES[n];
     if (!f) { $(n + 'Err').textContent = n === 'cv' ? 'Upload CV (PDF/JPG/PNG, maks 5 MB).' : 'Upload sertifikat ' + form.elements.level.value + '.'; return !required; }
-    if (f.size > MAX) { $(n + 'Err').textContent = 'Ukuran file maksimal 5 MB.'; return false; }
-    if (!/\.(pdf|jpe?g|png)$/i.test(f.name)) { $(n + 'Err').textContent = 'Format harus PDF, JPG, atau PNG.'; return false; }
+    if (f.loading) { $(n + 'Err').textContent = 'Tunggu sebentar, file sedang dibaca…'; return false; }
+    if (f.error) { $(n + 'Err').textContent = f.error; return false; }
     return true;
   }
   function showFile(n){
-    const f = form.elements[n].files[0];
-    $(n + 'Box').classList.toggle('has', !!f);
+    const f = FILES[n];
+    $(n + 'Box').classList.toggle('has', !!(f && f.blob));
     $(n + 'Txt').textContent = f ? f.name : (n === 'cv' ? 'Pilih file CV' : 'Pilih file sertifikat');
     const sm = document.createElement('small');
-    sm.textContent = f ? (f.size / 1024 / 1024).toFixed(2) + ' MB · ketuk untuk ganti' : 'PDF / JPG / PNG, maks 5 MB';
+    sm.textContent = !f ? 'PDF / JPG / PNG, maks 5 MB'
+      : f.loading ? 'Membaca file…'
+      : f.error ? 'Gagal — ketuk untuk pilih ulang'
+      : (f.size / 1024 / 1024).toFixed(2) + ' MB · ketuk untuk ganti';
     $(n + 'Txt').append(sm);
   }
-  ['cv', 'sertifikat'].forEach(n => form.elements[n].addEventListener('change', () => { showFile(n); check(n); }));
+  ['cv', 'sertifikat'].forEach(n => form.elements[n].addEventListener('change', async () => {
+    await readPicked(n);
+    showFile(n); check(n);
+  }));
   function syncCert(){
     $('certStar').hidden = !needCert();
     $('certHint').textContent = needCert() ? 'Wajib — upload sertifikat ' + form.elements.level.value + ' kamu.' : 'Opsional kalau belum punya sertifikat JLPT / JFT-Basic.';
@@ -369,11 +402,34 @@
     if (cur < steps.length - 1) return go(cur + 1);
 
     for (let i = 0; i < steps.length; i++) if (!stepValid(i)) return go(i);
-    const data = new FormData(form);
+    if (!navigator.onLine) return showError('Kamu sedang offline. Sambungkan internet lalu tekan Kirim lagi — data kamu tidak hilang.');
+
+    // Kirim dari salinan file di memori, bukan dari file asli di HP
+    const build = () => {
+      const fd = new FormData();
+      for (const [k, v] of new FormData(form)) if (typeof v === 'string') fd.append(k, v);
+      ['cv', 'sertifikat'].forEach(n => { if (FILES[n] && FILES[n].blob) fd.append(n, FILES[n].blob, FILES[n].name); });
+      return fd;
+    };
+    const send = async (tries) => {
+      try {
+        const r = await fetch('/api/submit', { method: 'POST', body: build() });
+        let res;
+        try { res = await r.json(); } catch { throw new Error('Server sedang sibuk (kode ' + r.status + ').'); }
+        return { ok: r.ok, res };
+      } catch (e) {
+        if (e instanceof TypeError && tries > 0) {   // koneksi putus: coba sekali lagi
+          await new Promise(ok => setTimeout(ok, 1500));
+          return send(tries - 1);
+        }
+        if (e instanceof TypeError) throw new Error('Koneksi terputus saat mengirim. Cek sinyal / Wi-Fi, lalu tekan Kirim lagi — data kamu tidak hilang.');
+        throw e;
+      }
+    };
+
     $('btn').disabled = true; $('back').disabled = true; $('btnText').textContent = 'Mengupload...';
     const reset = () => { $('btn').disabled = false; $('back').disabled = false; $('btnText').textContent = 'Kirim Pendaftaran'; };
-    fetch('/api/submit', { method: 'POST', body: data })
-      .then(r => r.json().then(res => ({ ok: r.ok, res })))
+    send(1)
       .then(({ ok, res }) => {
         reset();
         if (!ok || !res.ok) throw new Error(res.error || 'Gagal mengirim.');
@@ -385,12 +441,14 @@
       })
       .catch(err => {
         reset();
-        showError((err && err.message ? err.message : 'Koneksi bermasalah.') + ' Coba lagi ya.');
+        const m = err && err.message ? err.message : 'Koneksi bermasalah.';
+        showError(/[.!]$/.test(m) && /lagi/.test(m) ? m : m + ' Coba lagi ya.');
       });
   });
 
   $('again').addEventListener('click', () => {
     form.reset();
+    FILES.cv = FILES.sertifikat = null;
     ['cv', 'sertifikat'].forEach(showFile);
     form.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
     fillJobs();
