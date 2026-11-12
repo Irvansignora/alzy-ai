@@ -7,13 +7,21 @@ routes = [
 ]
 
 [vars]
-# Google Sheet "Daftar Lowongan" (Kategori | Nama Job | Status | Keterangan)
-JOBS_SHEET_ID = "1irCT-EoNFjdlD5LYPqeD5bdX5QbwRI2jYqzGdgptaDc"
+# Google Sheet "Daftar Lowongan" (Kategori | Nama Job | Status | Keterangan).
+# Kalau belum di-share "Siapa saja yang memiliki link", form pakai DEFAULT_JOBS di src/worker.js.
+JOBS_SHEET_ID = "1AZL6lB-AR_ireCJWKyE2a4k_p_txXSylb_TfP6TT-no"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "daftar-job"
 database_id = "b0f80f22-d061-4a80-ae1e-6ae79ea75b98"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "daftar-job-files"
+
+[observability]
+enabled = true
 
 [[rules]]
 type = "Text"

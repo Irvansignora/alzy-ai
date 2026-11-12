@@ -4,15 +4,16 @@
  * Routes:
  *   GET  /              -> halaman form
  *   GET  /api/jobs      -> daftar lowongan (dibaca dari Google Sheet "Daftar Lowongan")
- *   POST /api/submit    -> simpan pendaftar ke D1 (+ opsional langsung ke Google Sheets)
+ *   POST /api/submit    -> simpan pendaftar ke D1 + file CV/sertifikat ke R2
  *   GET  /export.csv?key=EXPORT_KEY -> semua pendaftar sbg CSV (dipakai IMPORTDATA di spreadsheet)
+ *   GET  /file/<key>?sig=...        -> download CV / sertifikat (link bertanda tangan, ada di spreadsheet)
  *
  * Bindings / vars:
  *   DB              D1 database (tabel `pendaftar`, lihat schema.sql)
- *   JOBS_SHEET_ID   ID Google Sheet lowongan (share: "Siapa saja yang memiliki link - Viewer")
- *   EXPORT_KEY      (secret) kunci untuk /export.csv
- * Opsional (kalau diisi, tiap pendaftar juga langsung di-append ke Sheets via service account):
- *   SHEET_ID, SHEET_TAB, GOOGLE_SA_EMAIL (secret), GOOGLE_SA_KEY (secret)
+ *   FILES           R2 bucket untuk CV & sertifikat
+ *   JOBS_SHEET_ID   ID Google Sheet lowongan. Kalau sheet tidak bisa dibaca (belum di-share
+ *                   "Siapa saja yang memiliki link - Viewer"), dipakai DEFAULT_JOBS di bawah.
+ *   EXPORT_KEY      (secret) kunci untuk /export.csv & tanda tangan link file
  */
 import FORM_HTML from './form.html';
 
@@ -23,9 +24,37 @@ const LEVELS = [
   'JFT-Basic A2'
 ];
 const KATEGORI = ['TG', 'Gijinkoku'];
-const JOBS_TTL = 60; // detik — perubahan di sheet lowongan muncul di form maks ±1 menit
+const CERT_LEVELS = LEVELS.filter(l => l.startsWith('JLPT') || l.startsWith('JFT'));
+const MAX_FILE = 5 * 1024 * 1024; // 5 MB per file
 
-let cachedToken = null; // { token, exp }
+// Lowongan bawaan — dipakai kalau sheet "Daftar Lowongan" belum bisa dibaca
+const DEFAULT_JOBS = [
+  ['TG', 'Pertanian (Nogyo)', 'Tanam sayur, buah, rumah kaca'],
+  ['TG', 'Peternakan (Chikusan)', 'Sapi, babi, ayam, susu'],
+  ['TG', 'Restoran / Food Service (Gaishoku)', 'Dapur & pelayanan'],
+  ['TG', 'Pengolahan Makanan & Minuman', 'Pabrik makanan, bento, roti'],
+  ['TG', 'Perawat Lansia (Kaigo)', ''],
+  ['TG', 'Perhotelan (Shukuhaku)', 'Front office, housekeeping'],
+  ['TG', 'Konstruksi (Kensetsu)', ''],
+  ['TG', 'Manufaktur / Pabrik (Kogyo Seihin)', 'Mesin, elektronik, logam'],
+  ['TG', 'Cleaning Service Gedung', ''],
+  ['TG', 'Perikanan (Gyogyo)', 'Penangkapan & budidaya'],
+  ['TG', 'Perbaikan Mobil (Jidosha Seibi)', ''],
+  ['TG', 'Perkapalan', ''],
+  ['TG', 'Bandara / Aviasi', 'Ground handling, perawatan pesawat'],
+  ['TG', 'Supir / Logistik (Jidosha Unso)', 'Truk, bus, taksi'],
+  ['Gijinkoku', 'IT / Software Engineer', 'Programmer, web, infrastruktur'],
+  ['Gijinkoku', 'Perhotelan (Front Office / Guest Service)', ''],
+  ['Gijinkoku', 'Engineer Mesin', ''],
+  ['Gijinkoku', 'Engineer Elektro', ''],
+  ['Gijinkoku', 'Engineer Sipil / Arsitek / CAD', ''],
+  ['Gijinkoku', 'Interpreter / Penerjemah', ''],
+  ['Gijinkoku', 'Admin / Staf Kantor', ''],
+  ['Gijinkoku', 'Marketing / Sales', ''],
+  ['Gijinkoku', 'Akuntansi / Keuangan', ''],
+  ['Gijinkoku', 'Trading / Ekspor-Impor / Logistik', '']
+].map(([kategori, job, keterangan]) => ({ kategori, job, keterangan }));
+const JOBS_TTL = 60; // detik — perubahan di sheet lowongan muncul di form maks ±1 menit
 
 export default {
   async fetch(request, env, ctx) {
@@ -53,6 +82,7 @@ export default {
     }
     if (method === 'POST' && url.pathname === '/api/submit') return handleSubmit(request, env, ctx);
     if (method === 'GET' && url.pathname === '/export.csv') return handleExport(url, env);
+    if (method === 'GET' && url.pathname.startsWith('/file/')) return handleFile(url, env);
 
     return new Response('Not found', { status: 404 });
   }
@@ -66,6 +96,18 @@ async function getJobs(env, ctx) {
   const hit = await cache.match(cacheKey);
   if (hit) return hit.json();
 
+  let jobs = DEFAULT_JOBS;
+  try { jobs = await fetchSheetJobs(env); }
+  catch (e) { console.warn('Pakai DEFAULT_JOBS:', e.message); }
+
+  ctx.waitUntil(cache.put(cacheKey, new Response(JSON.stringify(jobs), {
+    headers: { 'Cache-Control': `max-age=${JOBS_TTL}` }
+  })));
+  return jobs;
+}
+
+async function fetchSheetJobs(env) {
+  if (!env.JOBS_SHEET_ID) throw new Error('JOBS_SHEET_ID kosong');
   const res = await fetch(
     `https://docs.google.com/spreadsheets/d/${env.JOBS_SHEET_ID}/gviz/tq?tqx=out:csv`,
     { redirect: 'manual' }
@@ -88,10 +130,7 @@ async function getJobs(env, ctx) {
     }))
     .filter(j => j.kategori && j.job && j.status !== 'tutup')
     .map(({ kategori, job, keterangan }) => ({ kategori, job, keterangan }));
-
-  ctx.waitUntil(cache.put(cacheKey, new Response(JSON.stringify(jobs), {
-    headers: { 'Cache-Control': `max-age=${JOBS_TTL}` }
-  })));
+  if (!jobs.length) throw new Error('Sheet lowongan kosong');
   return jobs;
 }
 
@@ -110,9 +149,10 @@ async function handleSubmit(request, env, ctx) {
     return json({ ok: false, error: 'Akses ditolak.' }, 403);
   }
 
-  let data;
-  try { data = await request.json(); }
+  let fd;
+  try { fd = await request.formData(); }
   catch { return json({ ok: false, error: 'Data tidak valid.' }, 400); }
+  const data = Object.fromEntries([...fd.entries()].filter(([, v]) => typeof v === 'string'));
 
   if (data.website) return json({ ok: true, nama: 'kamu' }); // honeypot
 
@@ -131,6 +171,13 @@ async function handleSubmit(request, env, ctx) {
   if (!LEVELS.includes(level)) return bad('Pilih level bahasa Jepang.');
   if (!KATEGORI.includes(kategori)) return bad('Pilih jenis visa / program (TG atau Gijinkoku).');
 
+  const cv = await readFile(fd.get('cv'));
+  if (!cv) return bad('Upload CV dulu (PDF/JPG/PNG, maks 5 MB).');
+  if (cv.error) return bad('CV: ' + cv.error);
+  const cert = await readFile(fd.get('sertifikat'));
+  if (cert && cert.error) return bad('Sertifikat: ' + cert.error);
+  if (!cert && CERT_LEVELS.includes(level)) return bad('Upload sertifikat bahasa Jepang (' + level + ').');
+
   try {
     const jobs = await getJobs(env, ctx);
     if (!jobs.some(j => j.kategori === kategori && j.job === job)) {
@@ -142,19 +189,23 @@ async function handleSubmit(request, env, ctx) {
   }
 
   const timestamp = wibNow();
+  const base = `${timestamp.slice(0, 7)}/${timestamp.slice(0, 10)}-${slug(nama)}-${randomId()}`;
+  const cvKey = `${base}/CV.${cv.ext}`;
+  const certKey = cert ? `${base}/Sertifikat.${cert.ext}` : null;
+  try {
+    await env.FILES.put(cvKey, cv.bytes, { httpMetadata: { contentType: cv.type } });
+    if (cert) await env.FILES.put(certKey, cert.bytes, { httpMetadata: { contentType: cert.type } });
+  } catch (e) {
+    console.error('R2 error', e);
+    return json({ ok: false, error: 'Upload file gagal.' }, 500);
+  }
   try {
     await env.DB.prepare(
-      'INSERT INTO pendaftar (created_at, nama, hp, email, alamat, level, kategori, job) VALUES (?,?,?,?,?,?,?,?)'
-    ).bind(timestamp, nama, hp, email, alamat, level, kategori, job).run();
+      'INSERT INTO pendaftar (created_at, nama, hp, email, alamat, level, kategori, job, cv_key, sertifikat_key) VALUES (?,?,?,?,?,?,?,?,?,?)'
+    ).bind(timestamp, nama, hp, email, alamat, level, kategori, job, cvKey, certKey).run();
   } catch (e) {
     console.error('D1 error', e);
     return json({ ok: false, error: 'Server sedang sibuk.' }, 500);
-  }
-
-  // Opsional: langsung append ke Google Sheets kalau service account dipasang
-  if (env.GOOGLE_SA_EMAIL && env.GOOGLE_SA_KEY && env.SHEET_ID) {
-    ctx.waitUntil(appendToSheet(env, [timestamp, nama, hp, email, alamat, level, kategori, job])
-      .catch(e => console.error('Sheets append error', e)));
   }
 
   return json({ ok: true, nama });
@@ -167,66 +218,60 @@ async function handleExport(url, env) {
     return new Response('Forbidden', { status: 403 });
   }
   const { results } = await env.DB.prepare(
-    'SELECT created_at, nama, hp, email, alamat, level, kategori, job FROM pendaftar ORDER BY id'
+    'SELECT created_at, nama, hp, email, alamat, level, kategori, job, cv_key, sertifikat_key FROM pendaftar ORDER BY id'
   ).all();
   const head = ['Timestamp (WIB)', 'Nama Lengkap', 'No Handphone', 'Email', 'Alamat Domisili',
-    'Level Bahasa Jepang', 'Kategori', 'Job'];
-  const lines = [head, ...results.map(r => [
-    r.created_at, r.nama, displayHp(r.hp), r.email, r.alamat, r.level, r.kategori, r.job
-  ])].map(row => row.map(csvCell).join(','));
+    'Level Bahasa Jepang', 'Kategori', 'Job', 'CV (link download)', 'Sertifikat (link download)'];
+  const link = async k => k ? `https://${url.host}/file/${encodeURI(k)}?sig=${await sign(env, k)}` : '';
+  const rows = await Promise.all(results.map(async r => [
+    r.created_at, r.nama, displayHp(r.hp), r.email, r.alamat, r.level, r.kategori, r.job,
+    await link(r.cv_key), await link(r.sertifikat_key)
+  ]));
+  const lines = [head, ...rows].map(row => row.map(csvCell).join(','));
   return new Response(lines.join('\r\n') + '\r\n', {
     headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store' }
   });
 }
 
-/* ---------- Google Sheets append (opsional, service account JWT RS256) ---------- */
+/* ---------- File CV / sertifikat ---------- */
 
-async function appendToSheet(env, row) {
-  const token = await getAccessToken(env);
-  const range = encodeURIComponent(`${env.SHEET_TAB || 'Pendaftar'}!A:H`);
-  const res = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${env.SHEET_ID}/values/${range}:append` +
-      `?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ values: [row] })
+async function handleFile(url, env) {
+  const key = decodeURI(url.pathname.slice('/file/'.length));
+  const sig = url.searchParams.get('sig') || '';
+  if (!env.EXPORT_KEY || !key || !timingSafeEqual(sig, await sign(env, key))) {
+    return new Response('Link tidak valid.', { status: 403 });
+  }
+  const obj = await env.FILES.get(key);
+  if (!obj) return new Response('File tidak ditemukan.', { status: 404 });
+  const name = key.split('/').slice(-2).join('-');
+  return new Response(obj.body, {
+    headers: {
+      'Content-Type': obj.httpMetadata?.contentType || 'application/octet-stream',
+      'Content-Disposition': `attachment; filename="${name}"`,
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff'
     }
-  );
-  if (!res.ok) throw new Error(`Sheets API ${res.status} ${await res.text()}`);
+  });
 }
 
-async function getAccessToken(env) {
-  const now = Math.floor(Date.now() / 1000);
-  if (cachedToken && cachedToken.exp - 60 > now) return cachedToken.token;
+// Cek file: wajib PDF/JPG/PNG (dicek dari isi file, bukan nama) dan maks 5 MB
+async function readFile(f) {
+  if (!f || typeof f === 'string' || !f.size) return null;
+  if (f.size > MAX_FILE) return { error: 'ukuran maksimal 5 MB.' };
+  const bytes = new Uint8Array(await f.arrayBuffer());
+  const h = bytes.subarray(0, 8);
+  if (h[0] === 0x25 && h[1] === 0x50 && h[2] === 0x44 && h[3] === 0x46) return { bytes, ext: 'pdf', type: 'application/pdf' };
+  if (h[0] === 0xff && h[1] === 0xd8 && h[2] === 0xff) return { bytes, ext: 'jpg', type: 'image/jpeg' };
+  if (h[0] === 0x89 && h[1] === 0x50 && h[2] === 0x4e && h[3] === 0x47) return { bytes, ext: 'png', type: 'image/png' };
+  return { error: 'format harus PDF, JPG, atau PNG.' };
+}
 
-  const claim = {
-    iss: env.GOOGLE_SA_EMAIL,
-    scope: 'https://www.googleapis.com/auth/spreadsheets',
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now, exp: now + 3600
-  };
-  const unsigned = `${b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))}.${b64url(JSON.stringify(claim))}`;
-  const pem = env.GOOGLE_SA_KEY.replace(/\\n/g, '\n');
-  const der = Uint8Array.from(
-    atob(pem.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '')), c => c.charCodeAt(0)
+async function sign(env, key) {
+  const k = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(env.EXPORT_KEY), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
   );
-  const key = await crypto.subtle.importKey(
-    'pkcs8', der, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']
-  );
-  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(unsigned));
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion: `${unsigned}.${b64url(sig)}`
-    })
-  });
-  if (!res.ok) throw new Error('Token error ' + res.status + ' ' + (await res.text()));
-  const { access_token, expires_in } = await res.json();
-  cachedToken = { token: access_token, exp: now + expires_in };
-  return access_token;
+  const mac = await crypto.subtle.sign('HMAC', k, new TextEncoder().encode('file:' + key));
+  return b64url(mac);
 }
 
 /* ---------- helpers ---------- */
@@ -263,6 +308,12 @@ function normHp(v) {
 // Pakai tanda "-" supaya spreadsheet tidak membuang angka 0 di depan
 function displayHp(hp) {
   return /^0\d+$/.test(hp) ? hp.replace(/^(\d{4})(\d{4})(\d+)$/, '$1-$2-$3') : hp;
+}
+function slug(s) {
+  return s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'pendaftar';
+}
+function randomId() {
+  return [...crypto.getRandomValues(new Uint8Array(4))].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 function wibNow() {
   const d = new Date(Date.now() + 7 * 3600 * 1000);

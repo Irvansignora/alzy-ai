@@ -7,5 +7,7 @@ CREATE TABLE IF NOT EXISTS pendaftar (
   alamat TEXT NOT NULL,
   level TEXT NOT NULL,
   kategori TEXT NOT NULL,
-  job TEXT NOT NULL
+  job TEXT NOT NULL,
+  cv_key TEXT,
+  sertifikat_key TEXT
 );
