@@ -19,6 +19,13 @@ Live: https://daftar-job.iranza.com
   termasuk link download CV & sertifikat. Link file ditandatangani (HMAC) — tanpa `sig` yang benar = 403.
   Jangan share spreadsheet ini ke publik.
 
+## Halaman admin
+https://daftar-job.iranza.com/admin — lihat, cari, filter (TG / Gijinkoku / dobel), buka CV & sertifikat,
+chat WhatsApp, dan hapus pendaftar (satu-satu atau sekaligus; file di R2 ikut terhapus).
+- Dikunci **Cloudflare Access** (app *daftar-job admin*, login kode OTP ke email). Email yang boleh masuk
+  diatur di policy Access **dan** di `ADMIN_EMAILS` (worker juga memverifikasi JWT Access).
+- Pendaftaran dengan no HP / email yang sama untuk job yang sama otomatis ditolak.
+
 ## Endpoint
 | Method | Path | Fungsi |
 |---|---|---|
@@ -27,6 +34,10 @@ Live: https://daftar-job.iranza.com
 | POST | `/api/submit` | Kirim pendaftaran (multipart/form-data) |
 | GET | `/export.csv?key=…` | Semua pendaftar (CSV) |
 | GET | `/file/<key>?sig=…` | Download CV / sertifikat |
+| GET | `/admin` | Halaman admin (Cloudflare Access) |
+| GET | `/admin/api/list` | Data pendaftar + penanda dobel |
+| POST | `/admin/api/delete` | Hapus pendaftar `{ ids: [...] }` |
+| GET | `/admin/file/<key>` | Lihat CV / sertifikat |
 
 ## Deploy
 ```bash

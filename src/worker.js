@@ -7,6 +7,7 @@
  *   POST /api/submit    -> simpan pendaftar ke D1 + file CV/sertifikat ke R2
  *   GET  /export.csv?key=EXPORT_KEY -> semua pendaftar sbg CSV (dipakai IMPORTDATA di spreadsheet)
  *   GET  /file/<key>?sig=...        -> download CV / sertifikat (link bertanda tangan, ada di spreadsheet)
+ *   /admin, /admin/api/*, /admin/file/* -> halaman admin (dikunci Cloudflare Access + cek JWT di sini)
  *
  * Bindings / vars:
  *   DB              D1 database (tabel `pendaftar`, lihat schema.sql)
@@ -14,8 +15,12 @@
  *   JOBS_SHEET_ID   ID Google Sheet lowongan. Kalau sheet tidak bisa dibaca (belum di-share
  *                   "Siapa saja yang memiliki link - Viewer"), dipakai DEFAULT_JOBS di bawah.
  *   EXPORT_KEY      (secret) kunci untuk /export.csv & tanda tangan link file
+ *   ACCESS_TEAM     domain tim Cloudflare Access, mis. xxx.cloudflareaccess.com
+ *   ACCESS_AUD      Application Audience (AUD) tag aplikasi Access untuk /admin
+ *   ADMIN_EMAILS    email admin yang boleh masuk, dipisah koma
  */
 import FORM_HTML from './form.html';
+import ADMIN_HTML from './admin.html';
 
 const LEVELS = [
   'Belum pernah belajar',
@@ -83,6 +88,7 @@ export default {
     if (method === 'POST' && url.pathname === '/api/submit') return handleSubmit(request, env, ctx);
     if (method === 'GET' && url.pathname === '/export.csv') return handleExport(url, env);
     if (method === 'GET' && url.pathname.startsWith('/file/')) return handleFile(url, env);
+    if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return handleAdmin(request, url, env);
 
     return new Response('Not found', { status: 404 });
   }
@@ -188,6 +194,17 @@ async function handleSubmit(request, env, ctx) {
     return json({ ok: false, error: 'Daftar lowongan sedang tidak bisa dimuat.' }, 502);
   }
 
+  // Cegah data dobel: no HP / email yang sama untuk job yang sama
+  try {
+    const dup = await env.DB.prepare(
+      'SELECT id FROM pendaftar WHERE job = ? AND (hp = ? OR email = ?) LIMIT 1'
+    ).bind(job, hp, email).first();
+    if (dup) return bad('Kamu sudah terdaftar untuk job ini (no HP / email sama). Kalau mau update data, hubungi admin ya.');
+  } catch (e) {
+    console.error('Dup check error', e);
+    return json({ ok: false, error: 'Server sedang sibuk.' }, 500);
+  }
+
   const timestamp = wibNow();
   const base = `${timestamp.slice(0, 7)}/${timestamp.slice(0, 10)}-${slug(nama)}-${randomId()}`;
   const cvKey = `${base}/CV.${cv.ext}`;
@@ -274,7 +291,123 @@ async function sign(env, key) {
   return b64url(mac);
 }
 
+/* ---------- Admin ---------- */
+
+async function handleAdmin(request, url, env) {
+  const admin = await verifyAccess(request, env);
+  if (!admin) return new Response('Akses ditolak. Buka lewat https://' + url.host + '/admin dan login dengan email admin.', { status: 403 });
+  const path = url.pathname.replace(/\/+$/, '') || '/admin';
+  const { method } = request;
+
+  if (method === 'GET' && path === '/admin') {
+    return new Response(ADMIN_HTML, {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Referrer-Policy': 'no-referrer'
+      }
+    });
+  }
+
+  if (method === 'GET' && path === '/admin/api/list') {
+    const { results } = await env.DB.prepare(
+      'SELECT id, created_at, nama, hp, email, alamat, level, kategori, job, cv_key, sertifikat_key FROM pendaftar ORDER BY id DESC'
+    ).all();
+    const count = (k) => results.reduce((m, r) => (m[r[k]] = (m[r[k]] || 0) + 1, m), {});
+    const byHp = count('hp'), byEmail = count('email');
+    const rows = results.map(r => ({
+      id: r.id, created_at: r.created_at, nama: r.nama, hp: r.hp, email: r.email, alamat: r.alamat,
+      level: r.level, kategori: r.kategori, job: r.job,
+      cv: r.cv_key ? '/admin/file/' + encodeURI(r.cv_key) : '',
+      sertifikat: r.sertifikat_key ? '/admin/file/' + encodeURI(r.sertifikat_key) : '',
+      dobel: byHp[r.hp] > 1 || byEmail[r.email] > 1
+    }));
+    return json({ ok: true, admin, rows }, 200, { 'Cache-Control': 'no-store' });
+  }
+
+  if (method === 'POST' && path === '/admin/api/delete') {
+    const origin = request.headers.get('Origin');
+    if (!origin || new URL(origin).host !== url.host) return json({ ok: false, error: 'Akses ditolak.' }, 403);
+    let body;
+    try { body = await request.json(); } catch { return bad('Data tidak valid.'); }
+    const ids = [...new Set((Array.isArray(body.ids) ? body.ids : []).map(Number))]
+      .filter(n => Number.isInteger(n) && n > 0).slice(0, 200);
+    if (!ids.length) return bad('Tidak ada data yang dipilih.');
+    const marks = ids.map(() => '?').join(',');
+    const { results } = await env.DB.prepare(
+      'SELECT cv_key, sertifikat_key FROM pendaftar WHERE id IN (' + marks + ')'
+    ).bind(...ids).all();
+    const keys = results.flatMap(r => [r.cv_key, r.sertifikat_key]).filter(Boolean);
+    if (keys.length) await env.FILES.delete(keys);
+    const res = await env.DB.prepare('DELETE FROM pendaftar WHERE id IN (' + marks + ')').bind(...ids).run();
+    console.log('Admin delete', admin, ids);
+    return json({ ok: true, deleted: res.meta.changes });
+  }
+
+  if (method === 'GET' && path.startsWith('/admin/file/')) {
+    const key = decodeURI(path.slice('/admin/file/'.length));
+    const obj = await env.FILES.get(key);
+    if (!obj) return new Response('File tidak ditemukan.', { status: 404 });
+    const name = key.split('/').slice(-2).join('-');
+    return new Response(obj.body, {
+      headers: {
+        'Content-Type': obj.httpMetadata?.contentType || 'application/octet-stream',
+        'Content-Disposition': `inline; filename="${name}"`,
+        'Content-Security-Policy': 'sandbox',
+        'Cache-Control': 'private, no-store',
+        'X-Content-Type-Options': 'nosniff'
+      }
+    });
+  }
+
+  return new Response('Not found', { status: 404 });
+}
+
+// Verifikasi token Cloudflare Access (lapisan kedua, selain Access di depan /admin)
+let accessCerts = null; // { keys, exp }
+async function verifyAccess(request, env) {
+  if (!env.ACCESS_TEAM || !env.ACCESS_AUD) return null;
+  const jwt = request.headers.get('Cf-Access-Jwt-Assertion') || '';
+  const [h, p, s] = jwt.split('.');
+  if (!h || !p || !s) return null;
+  try {
+    const header = JSON.parse(new TextDecoder().decode(b64urlBytes(h)));
+    const payload = JSON.parse(new TextDecoder().decode(b64urlBytes(p)));
+    const now = Math.floor(Date.now() / 1000);
+    if (![].concat(payload.aud).includes(env.ACCESS_AUD)) return null;
+    if (payload.iss !== `https://${env.ACCESS_TEAM}` || !(payload.exp > now)) return null;
+    const allowed = String(env.ADMIN_EMAILS || '').toLowerCase().split(',').map(x => x.trim()).filter(Boolean);
+    const email = String(payload.email || '').toLowerCase();
+    if (allowed.length && !allowed.includes(email)) return null;
+
+    if (!accessCerts || accessCerts.exp < now) {
+      const r = await fetch(`https://${env.ACCESS_TEAM}/cdn-cgi/access/certs`);
+      if (!r.ok) return null;
+      accessCerts = { keys: (await r.json()).keys || [], exp: now + 3600 };
+    }
+    const jwk = accessCerts.keys.find(k => k.kid === header.kid);
+    if (!jwk) { accessCerts = null; return null; }
+    const key = await crypto.subtle.importKey(
+      'jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']
+    );
+    const ok = await crypto.subtle.verify(
+      'RSASSA-PKCS1-v1_5', key, b64urlBytes(s), new TextEncoder().encode(h + '.' + p)
+    );
+    return ok ? email : null;
+  } catch (e) {
+    console.error('Access verify error', e);
+    return null;
+  }
+}
+
 /* ---------- helpers ---------- */
+
+function b64urlBytes(str) {
+  const b = atob(str.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((str.length + 3) % 4));
+  return Uint8Array.from(b, c => c.charCodeAt(0));
+}
 
 function parseCsv(text) {
   const rows = []; let row = []; let cell = ''; let q = false;
