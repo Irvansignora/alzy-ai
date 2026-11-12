@@ -2,7 +2,8 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1e3a8a">
 <title>Daftar Job Jepang</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -11,57 +12,90 @@
     --brand:#c8102e; --brand-2:#1e3a8a; --ok:#15803d; --err:#dc2626;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding:24px 16px;line-height:1.5}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;min-height:100dvh;padding:16px 12px 0;line-height:1.5}
   .wrap{max-width:520px;margin:0 auto}
-  .hero{background:linear-gradient(135deg,var(--brand-2),#0b1d4f);color:#fff;border-radius:20px 20px 0 0;padding:28px 24px;position:relative;overflow:hidden}
-  .hero::after{content:"";position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;background:var(--brand);opacity:.9}
-  .hero small{display:inline-block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.8;position:relative;z-index:1}
-  .hero h1{font-size:24px;font-weight:700;margin-top:4px;position:relative;z-index:1}
-  .hero p{font-size:14px;opacity:.85;margin-top:6px;position:relative;z-index:1;max-width:80%}
-  .card{background:var(--card);border-radius:0 0 20px 20px;padding:24px;box-shadow:0 10px 30px rgba(15,23,42,.06)}
-  .field{margin-bottom:18px}
+
+  /* header + progres */
+  .hero{background:linear-gradient(135deg,var(--brand-2),#0b1d4f);color:#fff;border-radius:20px 20px 0 0;padding:18px 20px 16px;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;right:-34px;top:-34px;width:110px;height:110px;border-radius:50%;background:var(--brand);opacity:.9}
+  .hero small{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.8;position:relative;z-index:1}
+  .hero h1{font-size:20px;font-weight:700;margin-top:2px;position:relative;z-index:1}
+  .steps{display:flex;gap:6px;margin-top:14px;position:relative;z-index:1;list-style:none}
+  .steps li{flex:1;font-size:11px;font-weight:600;opacity:.6;transition:opacity .2s}
+  .steps li::before{content:"";display:block;height:4px;border-radius:4px;background:rgba(255,255,255,.3);margin-bottom:6px;transition:background .2s}
+  .steps li.on{opacity:1}
+  .steps li.on::before{background:#fff}
+  .steps li.past::before{background:#86efac}
+  .steps[hidden]{display:none}
+
+  .card{background:var(--card);border-radius:0 0 20px 20px;box-shadow:0 10px 30px rgba(15,23,42,.06)}
+  .body{padding:20px 20px 4px}
+  .step{display:none;animation:in .25s ease}
+  .step.on{display:block}
+  @keyframes in{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+  .step h2{font-size:17px;font-weight:700}
+  .step > p{font-size:13px;color:var(--muted);margin:2px 0 16px}
+
+  .field{margin-bottom:14px}
   label{display:block;font-size:14px;font-weight:600;margin-bottom:6px}
   label span{color:var(--brand)}
   input,select,textarea{width:100%;font:inherit;font-size:16px;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);transition:border-color .15s, box-shadow .15s}
-  textarea{resize:vertical;min-height:88px}
+  textarea{resize:vertical;min-height:76px}
   input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand-2);box-shadow:0 0 0 4px rgba(30,58,138,.12)}
   .invalid{border-color:var(--err)!important}
   .hint{font-size:12px;color:var(--muted);margin-top:4px}
   .error{font-size:12px;color:var(--err);margin-top:4px;display:none}
   .invalid ~ .error{display:block}
-  button{width:100%;font:inherit;font-weight:700;font-size:16px;padding:14px;border:0;border-radius:12px;background:var(--brand);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s, opacity .15s}
-  button:active{transform:scale(.98)}
-  button:disabled{opacity:.6;cursor:wait}
-  .spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;display:none}
-  button:disabled .spin{display:block}
-  @keyframes s{to{transform:rotate(360deg)}}
-  .alert{display:none;padding:12px 14px;border-radius:12px;font-size:14px;margin-bottom:16px;background:#fef2f2;color:var(--err);border:1px solid #fecaca}
-  .done{display:none;text-align:center;padding:16px 0}
-  .done .ic{width:64px;height:64px;border-radius:50%;background:#dcfce7;color:var(--ok);display:grid;place-items:center;margin:0 auto 14px;font-size:32px}
-  .done h2{font-size:20px}
-  .done p{color:var(--muted);font-size:14px;margin:6px 0 20px}
-  .done button{background:var(--brand-2)}
+
   .seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .seg label{margin:0;cursor:pointer;position:relative}
   .seg input{position:absolute;opacity:0;width:1px;height:1px}
-  .seg .opt{display:block;color:var(--ink);border:1.5px solid var(--line);border-radius:12px;padding:12px;text-align:center;font-weight:700;font-size:15px;transition:all .15s}
+  .seg .opt{display:block;color:var(--ink);border:1.5px solid var(--line);border-radius:12px;padding:12px 8px;text-align:center;font-weight:700;font-size:15px;transition:all .15s}
   .seg .opt small{display:block;font-weight:500;font-size:11px;color:var(--muted);margin-top:2px}
   .seg input:checked + .opt{border-color:var(--brand-2);background:rgba(30,58,138,.06);color:var(--brand-2);box-shadow:0 0 0 4px rgba(30,58,138,.12)}
   .seg input:focus-visible + .opt{outline:2px solid var(--brand-2);outline-offset:2px}
   .seg.invalid .opt{border-color:var(--err)}
   .seg.invalid ~ .error{display:block}
+  select:disabled{background:#f8fafc;color:var(--muted)}
+
   .file{position:relative;display:flex;align-items:center;gap:12px;border:1.5px dashed var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;transition:border-color .15s, background .15s}
   .file:hover{border-color:var(--brand-2);background:rgba(30,58,138,.03)}
   .file input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
   .file .ico{flex:none;width:36px;height:36px;border-radius:10px;background:rgba(30,58,138,.08);color:var(--brand-2);display:grid;place-items:center;font-size:18px}
-  .file .txt{font-size:14px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .file .txt{min-width:0;font-size:14px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .file .txt small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
   .file.has{border-style:solid;border-color:var(--ok);background:#f0fdf4}
   .file.has .ico{background:#dcfce7;color:var(--ok)}
   .file.invalid{border-color:var(--err)}
   .file.invalid ~ .error{display:block}
-  select:disabled{background:#f8fafc;color:var(--muted)}
-  footer{text-align:center;font-size:12px;color:var(--muted);margin-top:16px}
+
+  .recap{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:13px}
+  .recap div{display:flex;justify-content:space-between;gap:12px;padding:3px 0}
+  .recap dt{color:var(--muted);flex:none}
+  .recap dd{font-weight:600;text-align:right;overflow-wrap:anywhere}
+  .recap button{all:unset;cursor:pointer;color:var(--brand-2);font-weight:600;font-size:12px;display:inline-block;margin-top:6px}
+
+  .alert{display:none;padding:12px 14px;border-radius:12px;font-size:14px;margin-bottom:14px;background:#fef2f2;color:var(--err);border:1px solid #fecaca}
+
+  /* tombol navigasi: nempel di bawah layar */
+  .nav{position:sticky;bottom:0;z-index:5;display:flex;gap:10px;padding:12px 20px calc(12px + env(safe-area-inset-bottom));background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);border-radius:0 0 20px 20px}
+  .btn{flex:1;font:inherit;font-weight:700;font-size:16px;padding:14px;border:0;border-radius:12px;background:var(--brand);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .1s, opacity .15s}
+  .btn:active{transform:scale(.98)}
+  .btn:disabled{opacity:.6;cursor:wait}
+  .btn.ghost{flex:0 0 auto;background:#eef2ff;color:var(--brand-2);padding:14px 18px}
+  .btn[hidden]{display:none}
+  .spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;display:none}
+  .btn:disabled .spin{display:block}
+  @keyframes s{to{transform:rotate(360deg)}}
+
+  .done{display:none;text-align:center;padding:28px 20px 24px}
+  .done .ic{width:64px;height:64px;border-radius:50%;background:#dcfce7;color:var(--ok);display:grid;place-items:center;margin:0 auto 14px;font-size:32px}
+  .done h2{font-size:20px}
+  .done p{color:var(--muted);font-size:14px;margin:6px 0 20px}
+  .done .btn{background:var(--brand-2);width:100%}
+  footer{text-align:center;font-size:12px;color:var(--muted);padding:14px 0 calc(16px + env(safe-area-inset-bottom))}
+  @media (min-width:560px){ body{padding-top:32px} .hero{padding:24px 24px 18px} .body{padding:24px 24px 4px} .nav{padding-left:24px;padding-right:24px} }
 </style>
 </head>
 <body>
@@ -69,103 +103,119 @@
   <div class="hero">
     <small>日本で働く · Pendaftaran Job</small>
     <h1>Daftar Job Jepang</h1>
-    <p>Isi data di bawah dengan benar. Kolom bertanda * wajib diisi.</p>
+    <ol class="steps" id="steps" aria-label="Langkah pendaftaran">
+      <li class="on">1. Data diri</li>
+      <li>2. Pilih job</li>
+      <li>3. Dokumen</li>
+    </ol>
   </div>
 
   <div class="card">
-    <div class="alert" id="alert"></div>
-
     <form id="form" novalidate>
-      <!-- honeypot anti-bot: jangan dihapus -->
-      <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
-      <div class="field">
-        <label for="nama">Nama lengkap <span>*</span></label>
-        <input id="nama" name="nama" autocomplete="name" placeholder="Sesuai KTP / paspor">
-        <div class="error">Nama lengkap minimal 3 huruf.</div>
+      <div class="body">
+        <div class="alert" id="alert" role="alert"></div>
+        <!-- honeypot anti-bot: jangan dihapus -->
+        <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+
+        <section class="step on" data-fields="nama,hp,email,alamat">
+          <h2>Data diri</h2>
+          <p>Isi sesuai KTP / paspor. Semua kolom wajib diisi.</p>
+          <div class="field">
+            <label for="nama">Nama lengkap <span>*</span></label>
+            <input id="nama" name="nama" autocomplete="name" placeholder="Sesuai KTP / paspor" enterkeyhint="next">
+            <div class="error">Nama lengkap minimal 3 huruf.</div>
+          </div>
+          <div class="field">
+            <label for="hp">No handphone (WhatsApp) <span>*</span></label>
+            <input id="hp" name="hp" type="tel" inputmode="tel" autocomplete="tel" placeholder="08xxxxxxxxxx" enterkeyhint="next">
+            <div class="error">Masukkan 9–15 digit nomor yang valid.</div>
+          </div>
+          <div class="field">
+            <label for="email">Email <span>*</span></label>
+            <input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="nama@email.com" enterkeyhint="next">
+            <div class="error">Format email tidak valid.</div>
+          </div>
+          <div class="field">
+            <label for="alamat">Alamat domisili <span>*</span></label>
+            <textarea id="alamat" name="alamat" rows="2" autocomplete="street-address" placeholder="Jalan, kecamatan, kota/kabupaten, provinsi"></textarea>
+            <div class="error">Alamat domisili wajib diisi.</div>
+          </div>
+        </section>
+
+        <section class="step" data-fields="level,kategori,job">
+          <h2>Pilih job</h2>
+          <p>Pilih program dulu, lalu job yang kamu minati.</p>
+          <div class="field">
+            <label for="level">Level bahasa Jepang <span>*</span></label>
+            <select id="level" name="level">
+              <option value="">— Pilih level —</option>
+              <option>Belum pernah belajar</option>
+              <option>Pemula (belum bersertifikat)</option>
+              <option>JLPT N5</option>
+              <option>JLPT N4</option>
+              <option>JLPT N3</option>
+              <option>JLPT N2</option>
+              <option>JLPT N1</option>
+              <option>JFT-Basic A2</option>
+            </select>
+            <div class="error">Pilih salah satu level.</div>
+            <div class="hint">Pilih sertifikat tertinggi yang sudah kamu punya.</div>
+          </div>
+          <div class="field">
+            <label>Program / jenis visa <span>*</span></label>
+            <div class="seg" id="kategori">
+              <label><input type="radio" name="kategori" value="TG"><span class="opt">TG<small>Tokutei Ginou (SSW)</small></span></label>
+              <label><input type="radio" name="kategori" value="Gijinkoku"><span class="opt">Gijinkoku<small>Engineer / Humanities</small></span></label>
+            </div>
+            <div class="error">Pilih TG atau Gijinkoku.</div>
+          </div>
+          <div class="field">
+            <label for="job">Pilih job <span>*</span></label>
+            <select id="job" name="job" disabled>
+              <option value="">— Pilih program dulu —</option>
+            </select>
+            <div class="error">Pilih salah satu job.</div>
+            <div class="hint" id="jobHint">Daftar job menyesuaikan program yang dipilih.</div>
+          </div>
+        </section>
+
+        <section class="step" data-fields="cv,sertifikat">
+          <h2>Dokumen</h2>
+          <p>Upload CV dan sertifikat, lalu cek lagi data kamu.</p>
+          <div class="field">
+            <label for="cv">Upload CV <span>*</span></label>
+            <div class="file" id="cvBox">
+              <input type="file" id="cv" name="cv" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
+              <div class="ico">📄</div>
+              <div class="txt" id="cvTxt">Pilih file CV<small>PDF / JPG / PNG, maks 5 MB</small></div>
+            </div>
+            <div class="error" id="cvErr">Upload CV (PDF/JPG/PNG, maks 5 MB).</div>
+          </div>
+          <div class="field">
+            <label for="sertifikat">Sertifikat bahasa Jepang <span id="certStar" hidden>*</span></label>
+            <div class="file" id="sertifikatBox">
+              <input type="file" id="sertifikat" name="sertifikat" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
+              <div class="ico">🎓</div>
+              <div class="txt" id="sertifikatTxt">Pilih file sertifikat<small>PDF / JPG / PNG, maks 5 MB</small></div>
+            </div>
+            <div class="error" id="sertifikatErr">Upload sertifikat (PDF/JPG/PNG, maks 5 MB).</div>
+            <div class="hint" id="certHint">Wajib kalau sudah punya sertifikat JLPT / JFT-Basic.</div>
+          </div>
+          <dl class="recap" id="recap"></dl>
+        </section>
       </div>
 
-      <div class="field">
-        <label for="hp">No handphone (WhatsApp) <span>*</span></label>
-        <input id="hp" name="hp" type="tel" inputmode="tel" autocomplete="tel" placeholder="08xxxxxxxxxx">
-        <div class="error">Masukkan 9–15 digit nomor yang valid.</div>
+      <div class="nav">
+        <button type="button" class="btn ghost" id="back" hidden>Kembali</button>
+        <button type="submit" class="btn" id="btn"><span class="spin"></span><span id="btnText">Lanjut</span></button>
       </div>
-
-      <div class="field">
-        <label for="email">Email <span>*</span></label>
-        <input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="nama@email.com">
-        <div class="error">Format email tidak valid.</div>
-      </div>
-
-      <div class="field">
-        <label for="alamat">Alamat domisili <span>*</span></label>
-        <textarea id="alamat" name="alamat" autocomplete="street-address" placeholder="Jalan, kelurahan, kecamatan, kota/kabupaten, provinsi"></textarea>
-        <div class="error">Alamat domisili wajib diisi.</div>
-      </div>
-
-      <div class="field">
-        <label for="level">Level bahasa Jepang <span>*</span></label>
-        <select id="level" name="level">
-          <option value="">— Pilih level —</option>
-          <option>Belum pernah belajar</option>
-          <option>Pemula (belum bersertifikat)</option>
-          <option>JLPT N5</option>
-          <option>JLPT N4</option>
-          <option>JLPT N3</option>
-          <option>JLPT N2</option>
-          <option>JLPT N1</option>
-          <option>JFT-Basic A2</option>
-        </select>
-        <div class="error">Pilih salah satu level.</div>
-        <div class="hint">Pilih sertifikat tertinggi yang sudah kamu punya.</div>
-      </div>
-
-      <div class="field">
-        <label>Program / jenis visa <span>*</span></label>
-        <div class="seg" id="kategori">
-          <label><input type="radio" name="kategori" value="TG"><span class="opt">TG<small>Tokutei Ginou (SSW)</small></span></label>
-          <label><input type="radio" name="kategori" value="Gijinkoku"><span class="opt">Gijinkoku<small>Engineer / Humanities</small></span></label>
-        </div>
-        <div class="error">Pilih TG atau Gijinkoku.</div>
-      </div>
-
-      <div class="field">
-        <label for="job">Pilih job <span>*</span></label>
-        <select id="job" name="job" disabled>
-          <option value="">— Pilih program dulu —</option>
-        </select>
-        <div class="error">Pilih salah satu job.</div>
-        <div class="hint" id="jobHint">Daftar job menyesuaikan lowongan yang sedang dibuka.</div>
-      </div>
-
-      <div class="field">
-        <label for="cv">Upload CV <span>*</span></label>
-        <div class="file" id="cvBox">
-          <input type="file" id="cv" name="cv" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
-          <div class="ico">📄</div>
-          <div class="txt" id="cvTxt">Pilih file CV<small>PDF / JPG / PNG, maks 5 MB</small></div>
-        </div>
-        <div class="error" id="cvErr">Upload CV (PDF/JPG/PNG, maks 5 MB).</div>
-      </div>
-
-      <div class="field">
-        <label for="sertifikat">Sertifikat bahasa Jepang <span id="certStar" hidden>*</span></label>
-        <div class="file" id="sertifikatBox">
-          <input type="file" id="sertifikat" name="sertifikat" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
-          <div class="ico">🎓</div>
-          <div class="txt" id="sertifikatTxt">Pilih file sertifikat<small>PDF / JPG / PNG, maks 5 MB</small></div>
-        </div>
-        <div class="error" id="sertifikatErr">Upload sertifikat (PDF/JPG/PNG, maks 5 MB).</div>
-        <div class="hint" id="certHint">Wajib kalau sudah punya sertifikat JLPT / JFT-Basic.</div>
-      </div>
-
-      <button type="submit" id="btn"><span class="spin"></span><span id="btnText">Kirim Pendaftaran</span></button>
     </form>
 
     <div class="done" id="done">
       <div class="ic">✓</div>
       <h2>Pendaftaran terkirim!</h2>
       <p id="doneMsg">Terima kasih, data kamu sudah kami terima.</p>
-      <button type="button" id="again">Isi form lagi</button>
+      <button type="button" class="btn" id="again">Isi form lagi</button>
     </div>
   </div>
   <footer>Data kamu hanya digunakan untuk keperluan pendaftaran.</footer>
@@ -174,6 +224,8 @@
 <script>
   const $ = id => document.getElementById(id);
   const form = $('form');
+  const steps = [...form.querySelectorAll('.step')];
+  let cur = 0;
 
   const rules = {
     nama:   v => v.trim().length >= 3,
@@ -197,16 +249,15 @@
     if (!/\.(pdf|jpe?g|png)$/i.test(f.name)) { $(n + 'Err').textContent = 'Format harus PDF, JPG, atau PNG.'; return false; }
     return true;
   }
-  ['cv', 'sertifikat'].forEach(n => form.elements[n].addEventListener('change', () => {
+  function showFile(n){
     const f = form.elements[n].files[0];
     $(n + 'Box').classList.toggle('has', !!f);
-    $(n + 'Txt').innerHTML = '';
-    $(n + 'Txt').append(f ? f.name : (n === 'cv' ? 'Pilih file CV' : 'Pilih file sertifikat'));
+    $(n + 'Txt').textContent = f ? f.name : (n === 'cv' ? 'Pilih file CV' : 'Pilih file sertifikat');
     const sm = document.createElement('small');
     sm.textContent = f ? (f.size / 1024 / 1024).toFixed(2) + ' MB · ketuk untuk ganti' : 'PDF / JPG / PNG, maks 5 MB';
     $(n + 'Txt').append(sm);
-    check(n);
-  }));
+  }
+  ['cv', 'sertifikat'].forEach(n => form.elements[n].addEventListener('change', () => { showFile(n); check(n); }));
   function syncCert(){
     $('certStar').hidden = !needCert();
     $('certHint').textContent = needCert() ? 'Wajib — upload sertifikat ' + form.elements.level.value + ' kamu.' : 'Opsional kalau belum punya sertifikat JLPT / JFT-Basic.';
@@ -215,20 +266,23 @@
   form.elements.level.addEventListener('change', syncCert);
   syncCert();
 
+  /* ---- validasi ---- */
   // elemen yang diberi tanda merah (radio group / file -> wadahnya)
   const target = n => n === 'kategori' ? $('kategori') : (n === 'cv' || n === 'sertifikat') ? $(n + 'Box') : form.elements[n];
-
   function check(name){
     const ok = rules[name](form.elements[name].value);
     target(name).classList.toggle('invalid', !ok);
     return ok;
   }
-
-  Object.keys(rules).filter(n => !['kategori', 'cv', 'sertifikat'].includes(n)).forEach(n => {
+  ['nama', 'hp', 'email', 'alamat', 'level', 'job'].forEach(n => {
     const el = form.elements[n];
     el.addEventListener('blur', () => check(n));
     el.addEventListener('input', () => el.classList.contains('invalid') && check(n));
   });
+  // Enter di HP = pindah ke kolom berikutnya
+  ['nama', 'hp', 'email'].forEach((n, i, a) => form.elements[n].addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); form.elements[a[i + 1] || 'alamat'].focus(); }
+  }));
 
   /* ---- lowongan ---- */
   let JOBS = [];
@@ -239,7 +293,7 @@
     jobSel.innerHTML = '';
     const first = document.createElement('option');
     first.value = '';
-    first.textContent = !kat ? '— Pilih program dulu —' : list.length ? '— Pilih job —' : 'Belum ada lowongan ' + kat;
+    first.textContent = !kat ? '— Pilih program dulu —' : list.length ? '— Pilih job ' + kat + ' —' : 'Belum ada lowongan ' + kat;
     jobSel.appendChild(first);
     list.forEach(j => {
       const o = document.createElement('option');
@@ -254,46 +308,80 @@
     jobSel.classList.remove('invalid');
     fillJobs();
   }));
-  function loadJobs(){
-    fetch('/api/jobs').then(r => r.json()).then(res => {
-      JOBS = res.jobs || [];
-      if (!res.ok) $('jobHint').textContent = 'Daftar lowongan belum bisa dimuat. Coba muat ulang halaman.';
-      fillJobs();
-    }).catch(() => { $('jobHint').textContent = 'Koneksi bermasalah saat memuat lowongan.'; });
+  fetch('/api/jobs').then(r => r.json()).then(res => {
+    JOBS = res.jobs || [];
+    if (!res.ok) $('jobHint').textContent = 'Daftar lowongan belum bisa dimuat. Coba muat ulang halaman.';
+    fillJobs();
+  }).catch(() => { $('jobHint').textContent = 'Koneksi bermasalah saat memuat lowongan.'; });
+
+  /* ---- langkah (paginasi) ---- */
+  function go(i){
+    cur = i;
+    steps.forEach((s, k) => s.classList.toggle('on', k === i));
+    [...$('steps').children].forEach((li, k) => {
+      li.classList.toggle('on', k <= i);
+      li.classList.toggle('past', k < i);
+    });
+    $('back').hidden = i === 0;
+    $('btnText').textContent = i === steps.length - 1 ? 'Kirim Pendaftaran' : 'Lanjut';
+    $('alert').style.display = 'none';
+    if (i === steps.length - 1) renderRecap();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-  loadJobs();
+  function stepValid(i){
+    const names = steps[i].dataset.fields.split(',');
+    const ok = names.map(check);
+    if (ok.includes(false)) {
+      const inv = steps[i].querySelector('.invalid');
+      inv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      (inv.querySelector('input') || inv).focus({ preventScroll: true });
+      return false;
+    }
+    return true;
+  }
+  function renderRecap(){
+    const v = n => form.elements[n].value.trim();
+    const rows = [['Nama', v('nama')], ['WhatsApp', v('hp')], ['Email', v('email')], ['Program', v('kategori')], ['Job', v('job')], ['Level', v('level')]];
+    const r = $('recap');
+    r.innerHTML = '';
+    rows.forEach(([k, val]) => {
+      const d = document.createElement('div');
+      const dt = document.createElement('dt'); dt.textContent = k;
+      const dd = document.createElement('dd'); dd.textContent = val;
+      d.append(dt, dd); r.append(d);
+    });
+    const edit = document.createElement('button');
+    edit.type = 'button'; edit.textContent = '✎ Ubah data';
+    edit.onclick = () => go(0);
+    r.append(edit);
+  }
+  $('back').addEventListener('click', () => go(Math.max(0, cur - 1)));
 
   function showError(msg){
     const a = $('alert');
     a.textContent = msg; a.style.display = 'block';
-    a.scrollIntoView({behavior:'smooth', block:'center'});
+    a.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   form.addEventListener('submit', e => {
     e.preventDefault();
-    $('alert').style.display = 'none';
-    const results = Object.keys(rules).map(check);
-    if (results.includes(false)) {
-      const inv = form.querySelector('.invalid');
-      (inv.querySelector('input') || inv).focus();
-      return;
-    }
-    const data = new FormData(form);
-    $('btn').disabled = true; $('btnText').textContent = 'Mengupload...';
+    if (!stepValid(cur)) return;
+    if (cur < steps.length - 1) return go(cur + 1);
 
-    const reset = () => { $('btn').disabled = false; $('btnText').textContent = 'Kirim Pendaftaran'; };
-    fetch('/api/submit', {
-      method: 'POST',
-      body: data
-    })
+    for (let i = 0; i < steps.length; i++) if (!stepValid(i)) return go(i);
+    const data = new FormData(form);
+    $('btn').disabled = true; $('back').disabled = true; $('btnText').textContent = 'Mengupload...';
+    const reset = () => { $('btn').disabled = false; $('back').disabled = false; $('btnText').textContent = 'Kirim Pendaftaran'; };
+    fetch('/api/submit', { method: 'POST', body: data })
       .then(r => r.json().then(res => ({ ok: r.ok, res })))
       .then(({ ok, res }) => {
         reset();
         if (!ok || !res.ok) throw new Error(res.error || 'Gagal mengirim.');
         form.style.display = 'none';
+        $('steps').hidden = true;
         $('doneMsg').textContent = 'Terima kasih, ' + res.nama + '. Data kamu sudah kami terima — kami akan menghubungi lewat WhatsApp/email.';
         $('done').style.display = 'block';
-        window.scrollTo({top:0, behavior:'smooth'});
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       })
       .catch(err => {
         reset();
@@ -303,13 +391,14 @@
 
   $('again').addEventListener('click', () => {
     form.reset();
-    form.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
-    ['cv', 'sertifikat'].forEach(n => form.elements[n].dispatchEvent(new Event('change')));
+    ['cv', 'sertifikat'].forEach(showFile);
     form.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
     fillJobs();
     syncCert();
     $('done').style.display = 'none';
+    $('steps').hidden = false;
     form.style.display = 'block';
+    go(0);
   });
 </script>
 </body>
