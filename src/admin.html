@@ -8,58 +8,76 @@
 <title>Admin Pendaftar</title>
 <style>
   :root{
-    --bg:#f4f6fb; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
-    --brand:#c8102e; --brand-2:#1e3a8a; --ok:#15803d; --err:#dc2626; --warn:#b45309;
+    --bg:#f4f6fb; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --head:#f8fafc;
+    --brand:#c8102e; --brand-2:#1e3a8a; --ok:#15803d; --err:#dc2626;
+    --dup:#fffbeb; --pick:#eef2ff;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.45;padding-bottom:96px}
-  .top{background:linear-gradient(135deg,var(--brand-2),#0b1d4f);color:#fff;padding:16px 16px 14px}
-  .top .row{display:flex;align-items:center;justify-content:space-between;gap:8px;max-width:900px;margin:0 auto}
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.4;padding-bottom:84px}
+
+  .top{background:linear-gradient(135deg,var(--brand-2),#0b1d4f);color:#fff;padding:14px 16px 12px}
+  .top .row{display:flex;align-items:center;justify-content:space-between;gap:8px;max-width:1400px;margin:0 auto}
   .top h1{font-size:18px}
   .top small{display:block;font-size:12px;opacity:.75}
   .top a{color:#fff;font-size:13px;opacity:.85;text-decoration:none;border:1px solid rgba(255,255,255,.35);padding:6px 10px;border-radius:999px;white-space:nowrap}
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:900px;margin:12px auto 0}
-  .stat{background:rgba(255,255,255,.12);border-radius:12px;padding:8px 10px}
-  .stat b{display:block;font-size:20px;line-height:1.1}
+  .stats{display:grid;grid-template-columns:repeat(4,minmax(0,140px));gap:8px;max-width:1400px;margin:10px auto 0}
+  .stat{background:rgba(255,255,255,.12);border-radius:10px;padding:6px 10px}
+  .stat b{display:block;font-size:18px;line-height:1.1}
   .stat span{font-size:11px;opacity:.8}
-  .wrap{max-width:900px;margin:0 auto;padding:12px}
-  .tools{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0 8px}
-  input[type=search]{width:100%;font:inherit;font-size:16px;padding:11px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff}
-  input[type=search]:focus{outline:none;border-color:var(--brand-2);box-shadow:0 0 0 4px rgba(30,58,138,.12)}
-  .chips{display:flex;gap:6px;margin-top:8px;overflow-x:auto;scrollbar-width:none}
+
+  .wrap{max-width:1400px;margin:0 auto;padding:10px 12px}
+  .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+  input[type=search]{flex:1 1 240px;min-width:0;font:inherit;font-size:16px;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff}
+  input[type=search]:focus{outline:none;border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(30,58,138,.12)}
+  .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
   .chips button{flex:none;font:inherit;font-size:13px;font-weight:600;padding:7px 12px;border-radius:999px;border:1.5px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
   .chips button.on{background:var(--brand-2);border-color:var(--brand-2);color:#fff}
-  .chips .sel{margin-left:auto;color:var(--brand-2)}
-  .list{display:grid;gap:10px}
-  .item{background:var(--card);border:1.5px solid transparent;border-radius:16px;padding:12px 14px;box-shadow:0 4px 14px rgba(15,23,42,.05);display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
-  .item.dobel{border-color:#fcd34d;background:#fffbeb}
-  .item.picked{border-color:var(--brand-2)}
-  .item input[type=checkbox]{width:22px;height:22px;margin-top:2px;accent-color:var(--brand-2)}
-  .item h3{font-size:15px;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-  .badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#e0e7ff;color:var(--brand-2)}
+  .note{font-size:12px;color:var(--muted);margin:0 0 8px}
+
+  /* tabel: geser ke samping di HP, header & kolom nama tetap */
+  .tbl{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:auto;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px);-webkit-overflow-scrolling:touch}
+  table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;white-space:nowrap;background:var(--card)}
+  thead th{position:sticky;top:0;z-index:2;background:var(--head);font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  thead th.sort{cursor:pointer;user-select:none}
+  thead th.sort::after{content:" ↕";opacity:.35}
+  thead th.asc::after{content:" ↑";opacity:1;color:var(--brand-2)}
+  thead th.desc::after{content:" ↓";opacity:1;color:var(--brand-2)}
+  .c-chk{position:sticky;left:0;z-index:1;width:40px;min-width:40px;max-width:40px;padding:8px 0 8px 11px}
+  .c-nama{position:sticky;left:40px;z-index:1;box-shadow:1px 0 0 var(--line);font-weight:600}
+  td.c-nama{max-width:170px;overflow:hidden;text-overflow:ellipsis}
+  thead .c-chk,thead .c-nama{z-index:3}
+  td.clip{max-width:230px;overflow:hidden;text-overflow:ellipsis;cursor:help}
+  td.clip.open{white-space:normal;overflow-wrap:anywhere;max-width:280px}
+  td a{text-decoration:none}
+  td.num{color:var(--muted);text-align:right}
+  tbody tr.dobel td{background:var(--dup)}
+  tbody tr.picked td{background:var(--pick)}
+  tbody tr:hover td{background:#f1f5f9}
+  input[type=checkbox]{width:18px;height:18px;accent-color:var(--brand-2);vertical-align:middle}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#e0e7ff;color:var(--brand-2)}
   .badge.g{background:#fce7f3;color:#9d174d}
-  .badge.d{background:#fde68a;color:#78350f}
-  .job{font-size:14px;font-weight:600;color:var(--brand-2)}
-  .meta{grid-column:2;font-size:13px;color:var(--muted);display:grid;gap:2px}
-  .meta a{color:inherit}
-  .meta .addr{overflow-wrap:anywhere}
-  .acts{grid-column:2;display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-  .acts a,.acts button{font:inherit;font-size:13px;font-weight:600;padding:7px 12px;border-radius:10px;border:0;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
-  .acts .f{background:#eef2ff;color:var(--brand-2)}
-  .acts .wa{background:#dcfce7;color:var(--ok)}
-  .acts .del{background:#fef2f2;color:var(--err);margin-left:auto}
-  .acts .none{background:#f1f5f9;color:#94a3b8;cursor:default}
-  .empty{text-align:center;color:var(--muted);padding:40px 16px;font-size:14px}
-  .bar{position:fixed;left:0;right:0;bottom:0;z-index:10;background:#fff;border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:none;gap:10px;align-items:center;justify-content:center;box-shadow:0 -6px 20px rgba(15,23,42,.08)}
+  .badge.d{background:#fde68a;color:#78350f;margin-left:4px}
+  td a{color:var(--brand-2)}
+  .lnk{display:inline-block;font-weight:600;padding:3px 8px;border-radius:8px;background:#eef2ff;text-decoration:none}
+  .lnk.wa{background:#dcfce7;color:var(--ok)}
+  .none{color:#94a3b8}
+  .del{font:inherit;font-size:12px;font-weight:600;padding:4px 10px;border-radius:8px;border:0;background:#fef2f2;color:var(--err);cursor:pointer}
+  .empty{text-align:center;color:var(--muted);padding:32px 16px;white-space:normal}
+
+  .pager{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--muted)}
+  .pager .btns{display:flex;gap:6px;align-items:center}
+  .pager button,.pager select{font:inherit;font-size:13px;padding:6px 10px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);cursor:pointer}
+  .pager button:disabled{opacity:.4;cursor:default}
+
+  .bar{position:fixed;left:0;right:0;bottom:0;z-index:10;background:#fff;border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:none;gap:10px;align-items:center;justify-content:center;box-shadow:0 -6px 20px rgba(15,23,42,.08)}
   .bar.show{display:flex}
   .bar span{font-size:14px;font-weight:600}
-  .bar button{font:inherit;font-weight:700;font-size:15px;padding:12px 16px;border:0;border-radius:12px;cursor:pointer}
+  .bar button{font:inherit;font-weight:700;font-size:14px;padding:10px 16px;border:0;border-radius:10px;cursor:pointer}
   .bar .x{background:#f1f5f9;color:var(--ink)}
   .bar .go{background:var(--err);color:#fff}
-  .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw;text-align:center}
+  .toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw;text-align:center}
   .toast.show{opacity:1}
-  .note{font-size:12px;color:var(--muted);margin:2px 0 10px}
-  @media (min-width:700px){ .list{grid-template-columns:1fr 1fr} }
 </style>
 </head>
 <body>
@@ -78,17 +96,53 @@
 
 <main class="wrap">
   <div class="tools">
-    <input type="search" id="q" placeholder="Cari nama, no HP, email, job…" autocomplete="off">
+    <input type="search" id="q" placeholder="Cari nama, no HP, email, job, alamat…" autocomplete="off">
     <div class="chips" id="chips">
       <button type="button" data-f="all" class="on">Semua</button>
       <button type="button" data-f="TG">TG</button>
       <button type="button" data-f="Gijinkoku">Gijinkoku</button>
       <button type="button" data-f="dobel">⚠ Dobel</button>
-      <button type="button" class="sel" id="selAll">Pilih semua</button>
     </div>
   </div>
-  <p class="note">Kartu kuning = no HP / email muncul lebih dari sekali. Data yang dihapus di sini ikut hilang dari spreadsheet saat refresh berikutnya (±1 jam).</p>
-  <div class="list" id="list"><div class="empty">Memuat data…</div></div>
+  <p class="note">Baris kuning = no HP / email muncul lebih dari sekali. Klik judul kolom untuk mengurutkan. Ketuk job / alamat yang terpotong untuk melihat lengkap. Di HP, geser tabel ke samping.</p>
+
+  <div class="tbl">
+    <table>
+      <thead>
+        <tr>
+          <th class="c-chk"><input type="checkbox" id="chkAll" aria-label="Pilih semua di halaman ini"></th>
+          <th class="c-nama sort" data-k="nama">Nama</th>
+          <th class="sort" data-k="id">No</th>
+          <th class="sort desc" data-k="created_at">Waktu (WIB)</th>
+          <th class="sort" data-k="kategori">Program</th>
+          <th class="sort" data-k="job">Job</th>
+          <th class="sort" data-k="level">Level</th>
+          <th>No HP</th>
+          <th class="sort" data-k="email">Email</th>
+          <th>Alamat</th>
+          <th>CV</th>
+          <th>Sertifikat</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="rows"><tr><td colspan="13" class="empty">Memuat data…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="pager">
+    <span id="info">–</span>
+    <div class="btns">
+      <select id="per" aria-label="Baris per halaman">
+        <option value="25">25 / hal</option>
+        <option value="50" selected>50 / hal</option>
+        <option value="100">100 / hal</option>
+        <option value="0">Semua</option>
+      </select>
+      <button type="button" id="prev" aria-label="Halaman sebelumnya">‹</button>
+      <span id="pageTxt">1 / 1</span>
+      <button type="button" id="next" aria-label="Halaman berikutnya">›</button>
+    </div>
+  </div>
 </main>
 
 <div class="bar" id="bar">
@@ -100,7 +154,7 @@
 
 <script>
   const $ = id => document.getElementById(id);
-  let ROWS = [], filter = 'all';
+  let ROWS = [], filter = 'all', sortKey = 'created_at', sortDir = -1, page = 1;
   const picked = new Set();
 
   function toast(msg){
@@ -112,6 +166,11 @@
     if (cls) e.className = cls;
     if (text != null) e.textContent = text;
     return e;
+  }
+  function link(href, text, cls, newTab){
+    const a = el('a', cls, text); a.href = href;
+    if (newTab) { a.target = '_blank'; a.rel = 'noopener'; }
+    return a;
   }
   function waLink(hp){
     const d = String(hp).replace(/\D/g, '');
@@ -128,19 +187,40 @@
       for (const id of [...picked]) if (!ROWS.some(x => x.id === id)) picked.delete(id);
       render();
     } catch (e) {
-      $('list').innerHTML = '';
-      $('list').append(el('div', 'empty', 'Gagal memuat data. Coba muat ulang halaman. (' + e.message + ')'));
+      const tb = $('rows'); tb.innerHTML = '';
+      const tr = el('tr'), td = el('td', 'empty', 'Gagal memuat data. Coba muat ulang halaman. (' + e.message + ')');
+      td.colSpan = 13; tr.append(td); tb.append(tr);
     }
   }
 
-  function visible(){
+  function filtered(){
     const q = $('q').value.trim().toLowerCase();
-    return ROWS.filter(r => {
+    const list = ROWS.filter(r => {
       if (filter === 'dobel' && !r.dobel) return false;
       if ((filter === 'TG' || filter === 'Gijinkoku') && r.kategori !== filter) return false;
       if (!q) return true;
       return [r.nama, r.hp, r.email, r.job, r.alamat, r.level].some(v => String(v).toLowerCase().includes(q));
     });
+    return list.sort((a, b) => {
+      const x = a[sortKey], y = b[sortKey];
+      const c = typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'id', { sensitivity: 'base' });
+      return c * sortDir || (b.id - a.id);
+    });
+  }
+
+  function pageRows(list){
+    const per = +$('per').value;
+    const pages = per ? Math.max(1, Math.ceil(list.length / per)) : 1;
+    page = Math.min(Math.max(1, page), pages);
+    const start = per ? (page - 1) * per : 0;
+    const rows = per ? list.slice(start, start + per) : list;
+    $('pageTxt').textContent = page + ' / ' + pages;
+    $('prev').disabled = page <= 1;
+    $('next').disabled = page >= pages;
+    $('info').textContent = list.length
+      ? 'Menampilkan ' + (start + 1) + '–' + (start + rows.length) + ' dari ' + list.length + ' data'
+      : '0 data';
+    return rows;
   }
 
   function render(){
@@ -149,42 +229,50 @@
     $('sGJ').textContent = ROWS.filter(r => r.kategori === 'Gijinkoku').length;
     $('sDup').textContent = ROWS.filter(r => r.dobel).length;
 
-    const rows = visible();
-    const list = $('list');
-    list.innerHTML = '';
-    if (!rows.length) list.append(el('div', 'empty', ROWS.length ? 'Tidak ada data yang cocok.' : 'Belum ada pendaftar.'));
+    const rows = pageRows(filtered());
+    const tb = $('rows');
+    tb.innerHTML = '';
+    if (!rows.length) {
+      const tr = el('tr'), td = el('td', 'empty', ROWS.length ? 'Tidak ada data yang cocok.' : 'Belum ada pendaftar.');
+      td.colSpan = 13; tr.append(td); tb.append(tr);
+    }
 
     rows.forEach(r => {
-      const card = el('div', 'item' + (r.dobel ? ' dobel' : '') + (picked.has(r.id) ? ' picked' : ''));
-      const cb = el('input');
-      cb.type = 'checkbox'; cb.checked = picked.has(r.id);
+      const tr = el('tr', (r.dobel ? 'dobel' : '') + (picked.has(r.id) ? ' picked' : ''));
+      const td = (cls, ...kids) => { const c = el('td', cls); kids.forEach(k => c.append(k)); tr.append(c); return c; };
+      // teks panjang dipotong "…"; teks lengkap di tooltip, ketuk untuk buka/tutup
+      const clip = (text) => { const c = td('clip', text); c.title = text; c.addEventListener('click', () => c.classList.toggle('open')); return c; };
+
+      const cb = el('input'); cb.type = 'checkbox'; cb.checked = picked.has(r.id);
       cb.setAttribute('aria-label', 'Pilih ' + r.nama);
-      cb.addEventListener('change', () => { cb.checked ? picked.add(r.id) : picked.delete(r.id); card.classList.toggle('picked', cb.checked); syncBar(); });
+      cb.addEventListener('change', () => { cb.checked ? picked.add(r.id) : picked.delete(r.id); tr.classList.toggle('picked', cb.checked); syncBar(); });
+      td('c-chk', cb);
 
-      const head = el('div');
-      const h = el('h3', null, r.nama);
-      h.append(el('span', 'badge' + (r.kategori === 'Gijinkoku' ? ' g' : ''), r.kategori));
-      if (r.dobel) h.append(el('span', 'badge d', 'Dobel'));
-      head.append(h, el('div', 'job', r.job));
-
-      const meta = el('div', 'meta');
-      const hp = el('a', null, '📱 ' + r.hp); hp.href = 'tel:' + r.hp;
-      const em = el('a', null, '✉️ ' + r.email); em.href = 'mailto:' + r.email;
-      meta.append(hp, em, el('div', null, '🗣️ ' + r.level), el('div', 'addr', '📍 ' + r.alamat), el('div', null, '🕒 ' + r.created_at + ' WIB'));
-
-      const acts = el('div', 'acts');
-      const file = (url, label) => {
-        if (!url) return el('span', 'none f', label + ' –');
-        const a = el('a', 'f', label); a.href = url; a.target = '_blank'; a.rel = 'noopener';
-        return a;
-      };
-      const wa = el('a', 'wa', 'WhatsApp'); wa.href = waLink(r.hp); wa.target = '_blank'; wa.rel = 'noopener';
+      const nm = td('c-nama', r.nama); nm.title = r.nama;
+      if (r.dobel) nm.append(el('span', 'badge d', 'Dobel'));
+      td('num', String(r.id));
+      td('', r.created_at);
+      td('', el('span', 'badge' + (r.kategori === 'Gijinkoku' ? ' g' : ''), r.kategori));
+      clip(r.job);
+      td('', r.level);
+      td('', link('tel:' + r.hp, r.hp));
+      td('', link('mailto:' + r.email, r.email));
+      clip(r.alamat);
+      td('', r.cv ? link(r.cv, '📄 Lihat', 'lnk', true) : el('span', 'none', '–'));
+      td('', r.sertifikat ? link(r.sertifikat, '🎓 Lihat', 'lnk', true) : el('span', 'none', '–'));
       const del = el('button', 'del', 'Hapus'); del.type = 'button';
       del.addEventListener('click', () => remove([r.id], r.nama));
-      acts.append(file(r.cv, '📄 CV'), file(r.sertifikat, '🎓 Sertifikat'), wa, del);
+      const a = td('', link(waLink(r.hp), 'WA', 'lnk wa', true));
+      a.append(' ', del);
+      tb.append(tr);
+    });
 
-      card.append(cb, head, meta, acts);
-      list.append(card);
+    const ids = rows.map(r => r.id);
+    $('chkAll').checked = ids.length > 0 && ids.every(id => picked.has(id));
+    $('chkAll').indeterminate = !$('chkAll').checked && ids.some(id => picked.has(id));
+    document.querySelectorAll('thead th.sort').forEach(th => {
+      th.classList.toggle('asc', th.dataset.k === sortKey && sortDir === 1);
+      th.classList.toggle('desc', th.dataset.k === sortKey && sortDir === -1);
     });
     syncBar();
   }
@@ -213,20 +301,28 @@
     }
   }
 
-  $('q').addEventListener('input', render);
+  $('q').addEventListener('input', () => { page = 1; render(); });
   $('chips').addEventListener('click', e => {
     const b = e.target.closest('button[data-f]');
     if (!b) return;
-    filter = b.dataset.f;
+    filter = b.dataset.f; page = 1;
     [...$('chips').querySelectorAll('[data-f]')].forEach(x => x.classList.toggle('on', x === b));
     render();
   });
-  $('selAll').addEventListener('click', () => {
-    const rows = visible();
-    const all = rows.length && rows.every(r => picked.has(r.id));
-    rows.forEach(r => all ? picked.delete(r.id) : picked.add(r.id));
+  document.querySelector('thead').addEventListener('click', e => {
+    const th = e.target.closest('th.sort');
+    if (!th) return;
+    if (sortKey === th.dataset.k) sortDir = -sortDir;
+    else { sortKey = th.dataset.k; sortDir = (sortKey === 'created_at' || sortKey === 'id') ? -1 : 1; }
     render();
   });
+  $('chkAll').addEventListener('change', e => {
+    pageRows(filtered()).forEach(r => e.target.checked ? picked.add(r.id) : picked.delete(r.id));
+    render();
+  });
+  $('per').addEventListener('change', () => { page = 1; render(); });
+  $('prev').addEventListener('click', () => { page--; render(); });
+  $('next').addEventListener('click', () => { page++; render(); });
   $('clear').addEventListener('click', () => { picked.clear(); render(); });
   $('delSel').addEventListener('click', () => remove([...picked]));
   load();
