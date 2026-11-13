@@ -18,6 +18,7 @@ Live: https://daftar-job.iranza.com
   `/export.csv?key=EXPORT_KEY`, termasuk link download CV & sertifikat (link ditandatangani HMAC).
   Worker memanggil web app script itu (`SHEET_WEBHOOK`) setiap ada pendaftar baru / data dihapus,
   jadi sheet ter-update dalam hitungan detik; ada juga sinkron otomatis tiap 5 menit sebagai cadangan.
+  Script menulis tab "Pendaftar" (semua), "Kandidat TG" dan "Kandidat Gijinkoku".
   Cara pasang ada di kepala file `apps-script/Sync.gs`. Jangan share spreadsheet ini ke publik.
 
 ## Halaman admin

@@ -10,11 +10,18 @@
  *     Salin "Web app URL" (…/exec) dan simpan sebagai secret SHEET_WEBHOOK di worker.
  *     Setelah itu, setiap pendaftar baru / data yang dihapus di admin langsung masuk ke sheet.
  *
- * Catatan: tab "Pendaftar" ditulis ulang setiap sinkron. Untuk catatan sendiri, pakai tab lain.
+ * Tab yang ditulis script ini (ditulis ulang setiap sinkron — untuk catatan sendiri, pakai tab lain):
+ *   - "Pendaftar"           : semua pendaftar
+ *   - "Kandidat TG"         : hanya program TG (Tokutei Ginou)
+ *   - "Kandidat Gijinkoku"  : hanya program Gijinkoku
+ *
+ * Update script yang sudah terpasang: tempel versi baru → Simpan → Deploy → Manage deployments →
+ * ikon pensil → Version: New version → Deploy (URL web app tetap sama).
  */
 const EXPORT_URL = 'https://daftar-job.iranza.com/export.csv';
 const EXPORT_KEY = 'GANTI_DENGAN_EXPORT_KEY';
 const TAB = 'Pendaftar';
+const TABS_BY_KATEGORI = { 'TG': 'Kandidat TG', 'Gijinkoku': 'Kandidat Gijinkoku' };
 
 function sync() {
   const lock = LockService.getScriptLock();
@@ -26,26 +33,37 @@ function sync() {
     if (!rows.length) return 'empty';
 
     const ss = SpreadsheetApp.getActive();
-    const sh = ss.getSheetByName(TAB) || ss.insertSheet(TAB, 0);
     const cols = rows[0].length;
     const data = rows.map(r => {                      // pastikan semua baris sama panjang
       const x = r.slice(0, cols);
       while (x.length < cols) x.push('');
       return x;
     });
+    const head = data[0], body = data.slice(1);
+    const iKat = head.indexOf('Kategori');
 
-    sh.clearContents();
-    const range = sh.getRange(1, 1, data.length, cols);
-    range.setNumberFormat('@');                       // teks apa adanya: 0 di depan no HP aman
-    range.setValues(data);
-    sh.getRange(1, 1, 1, cols).setFontWeight('bold').setBackground('#e0e7ff');
-    sh.setFrozenRows(1);
-    if (sh.getMaxRows() > data.length + 1) {          // buang sisa baris lama (data yang dihapus)
-      sh.getRange(data.length + 1, 1, sh.getMaxRows() - data.length, sh.getMaxColumns()).clearContent();
-    }
-    return 'ok ' + (data.length - 1);
+    writeTab_(ss, TAB, data, 0);
+    let pos = 1;
+    Object.keys(TABS_BY_KATEGORI).forEach(kat => {   // satu tab per program
+      writeTab_(ss, TABS_BY_KATEGORI[kat], [head].concat(body.filter(r => r[iKat] === kat)), pos++);
+    });
+    return 'ok ' + body.length;
   } finally {
     lock.releaseLock();
+  }
+}
+
+function writeTab_(ss, name, data, index) {
+  const sh = ss.getSheetByName(name) || ss.insertSheet(name, index);
+  const cols = data[0].length;
+  sh.clearContents();
+  const range = sh.getRange(1, 1, data.length, cols);
+  range.setNumberFormat('@');                         // teks apa adanya: 0 di depan no HP aman
+  range.setValues(data);
+  sh.getRange(1, 1, 1, cols).setFontWeight('bold').setBackground('#e0e7ff');
+  sh.setFrozenRows(1);
+  if (sh.getMaxRows() > data.length) {                // buang sisa baris lama (data yang dihapus)
+    sh.getRange(data.length + 1, 1, sh.getMaxRows() - data.length, sh.getMaxColumns()).clearContent();
   }
 }
 
