@@ -16,16 +16,16 @@
   body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.4;padding-bottom:84px}
 
   .top{background:linear-gradient(135deg,var(--brand-2),#0b1d4f);color:#fff;padding:14px 16px 12px}
-  .top .row{display:flex;align-items:center;justify-content:space-between;gap:8px;max-width:1400px;margin:0 auto}
+  .top .row{display:flex;align-items:center;justify-content:space-between;gap:8px;max-width:1800px;margin:0 auto}
   .top h1{font-size:18px}
   .top small{display:block;font-size:12px;opacity:.75}
   .top a{color:#fff;font-size:13px;opacity:.85;text-decoration:none;border:1px solid rgba(255,255,255,.35);padding:6px 10px;border-radius:999px;white-space:nowrap}
-  .stats{display:grid;grid-template-columns:repeat(4,minmax(0,140px));gap:8px;max-width:1400px;margin:10px auto 0}
+  .stats{display:grid;grid-template-columns:repeat(4,minmax(0,140px));gap:8px;max-width:1800px;margin:10px auto 0}
   .stat{background:rgba(255,255,255,.12);border-radius:10px;padding:6px 10px}
   .stat b{display:block;font-size:18px;line-height:1.1}
   .stat span{font-size:11px;opacity:.8}
 
-  .wrap{max-width:1400px;margin:0 auto;padding:10px 12px}
+  .wrap{max-width:1800px;margin:0 auto;padding:10px 16px}
   .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
   input[type=search]{flex:1 1 240px;min-width:0;font:inherit;font-size:16px;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff}
   input[type=search]:focus{outline:none;border-color:var(--brand-2);box-shadow:0 0 0 3px rgba(30,58,138,.12)}
@@ -34,21 +34,22 @@
   .chips button.on{background:var(--brand-2);border-color:var(--brand-2);color:#fff}
   .note{font-size:12px;color:var(--muted);margin:0 0 8px}
 
-  /* tabel: geser ke samping di HP, header & kolom nama tetap */
-  .tbl{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:auto;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px);-webkit-overflow-scrolling:touch}
-  table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
-  th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;white-space:nowrap;background:var(--card)}
-  thead th{position:sticky;top:0;z-index:2;background:var(--head);font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  /* tabel: desktop pas selebar layar (tanpa scroll); HP geser ke samping */
+  .tbl{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{border-collapse:separate;border-spacing:0;width:100%;min-width:1080px;table-layout:fixed;font-size:13px}
+  th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--card)}
+  tbody tr:last-child td{border-bottom:0}
+  thead th{background:var(--head);font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  @media (min-width:1100px){ table{min-width:0} .c-chk,.c-nama{position:static} }
   thead th.sort{cursor:pointer;user-select:none}
   thead th.sort::after{content:" ↕";opacity:.35}
   thead th.asc::after{content:" ↑";opacity:1;color:var(--brand-2)}
   thead th.desc::after{content:" ↓";opacity:1;color:var(--brand-2)}
-  .c-chk{position:sticky;left:0;z-index:1;width:40px;min-width:40px;max-width:40px;padding:8px 0 8px 11px}
+  .c-chk{position:sticky;left:0;z-index:1;padding-left:12px;padding-right:0}
   .c-nama{position:sticky;left:40px;z-index:1;box-shadow:1px 0 0 var(--line);font-weight:600}
-  td.c-nama{max-width:170px;overflow:hidden;text-overflow:ellipsis}
   thead .c-chk,thead .c-nama{z-index:3}
-  td.clip{max-width:230px;overflow:hidden;text-overflow:ellipsis;cursor:help}
-  td.clip.open{white-space:normal;overflow-wrap:anywhere;max-width:280px}
+  td.clip{cursor:help}
+  td.clip.open{white-space:normal;overflow-wrap:anywhere}
   td a{text-decoration:none}
   td.num{color:var(--muted);text-align:right}
   tbody tr.dobel td{background:var(--dup)}
@@ -59,7 +60,7 @@
   .badge.g{background:#fce7f3;color:#9d174d}
   .badge.d{background:#fde68a;color:#78350f;margin-left:4px}
   td a{color:var(--brand-2)}
-  .lnk{display:inline-block;font-weight:600;padding:3px 8px;border-radius:8px;background:#eef2ff;text-decoration:none}
+  .lnk{display:inline-block;font-weight:600;padding:3px 7px;border-radius:8px;background:#eef2ff;text-decoration:none;margin-right:2px}
   .lnk.wa{background:#dcfce7;color:var(--ok)}
   .none{color:#94a3b8}
   .del{font:inherit;font-size:12px;font-weight:600;padding:4px 10px;border-radius:8px;border:0;background:#fef2f2;color:var(--err);cursor:pointer}
@@ -104,28 +105,32 @@
       <button type="button" data-f="dobel">⚠ Dobel</button>
     </div>
   </div>
-  <p class="note">Baris kuning = no HP / email muncul lebih dari sekali. Klik judul kolom untuk mengurutkan. Ketuk job / alamat yang terpotong untuk melihat lengkap. Di HP, geser tabel ke samping.</p>
+  <p class="note">Baris kuning = no HP / email muncul lebih dari sekali. Klik judul kolom untuk mengurutkan. Arahkan kursor / ketuk teks yang terpotong untuk melihat lengkap.</p>
 
   <div class="tbl">
     <table>
+      <colgroup>
+        <!-- kolom tanpa lebar (Nama, Job, Email, Alamat) berbagi sisa ruang -->
+        <col style="width:40px"><col><col style="width:108px"><col style="width:96px">
+        <col><col style="width:112px"><col style="width:124px"><col>
+        <col><col style="width:150px"><col style="width:128px">
+      </colgroup>
       <thead>
         <tr>
           <th class="c-chk"><input type="checkbox" id="chkAll" aria-label="Pilih semua di halaman ini"></th>
           <th class="c-nama sort" data-k="nama">Nama</th>
-          <th class="sort" data-k="id">No</th>
-          <th class="sort desc" data-k="created_at">Waktu (WIB)</th>
+          <th class="sort desc" data-k="created_at">Waktu</th>
           <th class="sort" data-k="kategori">Program</th>
           <th class="sort" data-k="job">Job</th>
           <th class="sort" data-k="level">Level</th>
           <th>No HP</th>
           <th class="sort" data-k="email">Email</th>
           <th>Alamat</th>
-          <th>CV</th>
-          <th>Sertifikat</th>
+          <th>Dokumen</th>
           <th>Aksi</th>
         </tr>
       </thead>
-      <tbody id="rows"><tr><td colspan="13" class="empty">Memuat data…</td></tr></tbody>
+      <tbody id="rows"><tr><td colspan="11" class="empty">Memuat data…</td></tr></tbody>
     </table>
   </div>
 
@@ -133,10 +138,9 @@
     <span id="info">–</span>
     <div class="btns">
       <select id="per" aria-label="Baris per halaman">
-        <option value="25">25 / hal</option>
-        <option value="50" selected>50 / hal</option>
-        <option value="100">100 / hal</option>
-        <option value="0">Semua</option>
+        <option value="10" selected>10 / hal</option>
+        <option value="20">20 / hal</option>
+        <option value="50">50 / hal</option>
       </select>
       <button type="button" id="prev" aria-label="Halaman sebelumnya">‹</button>
       <span id="pageTxt">1 / 1</span>
@@ -172,6 +176,11 @@
     if (newTab) { a.target = '_blank'; a.rel = 'noopener'; }
     return a;
   }
+  const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  function shortTime(s){   // "2026-11-13 16:46:37" -> "13 Nov 16:46"
+    const m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2})/.exec(s || '');
+    return m ? (+m[3]) + ' ' + BULAN[+m[2] - 1] + ' ' + m[4] : s;
+  }
   function waLink(hp){
     const d = String(hp).replace(/\D/g, '');
     return 'https://wa.me/' + (d.startsWith('0') ? '62' + d.slice(1) : d);
@@ -189,7 +198,7 @@
     } catch (e) {
       const tb = $('rows'); tb.innerHTML = '';
       const tr = el('tr'), td = el('td', 'empty', 'Gagal memuat data. Coba muat ulang halaman. (' + e.message + ')');
-      td.colSpan = 13; tr.append(td); tb.append(tr);
+      td.colSpan = 11; tr.append(td); tb.append(tr);
     }
   }
 
@@ -234,7 +243,7 @@
     tb.innerHTML = '';
     if (!rows.length) {
       const tr = el('tr'), td = el('td', 'empty', ROWS.length ? 'Tidak ada data yang cocok.' : 'Belum ada pendaftar.');
-      td.colSpan = 13; tr.append(td); tb.append(tr);
+      td.colSpan = 11; tr.append(td); tb.append(tr);
     }
 
     rows.forEach(r => {
@@ -250,16 +259,16 @@
 
       const nm = td('c-nama', r.nama); nm.title = r.nama;
       if (r.dobel) nm.append(el('span', 'badge d', 'Dobel'));
-      td('num', String(r.id));
-      td('', r.created_at);
+      const w = td('', shortTime(r.created_at)); w.title = r.created_at + ' WIB';
       td('', el('span', 'badge' + (r.kategori === 'Gijinkoku' ? ' g' : ''), r.kategori));
       clip(r.job);
-      td('', r.level);
+      td('', r.level).title = r.level;
       td('', link('tel:' + r.hp, r.hp));
-      td('', link('mailto:' + r.email, r.email));
+      const em = td('', link('mailto:' + r.email, r.email)); em.title = r.email;
       clip(r.alamat);
-      td('', r.cv ? link(r.cv, '📄 Lihat', 'lnk', true) : el('span', 'none', '–'));
-      td('', r.sertifikat ? link(r.sertifikat, '🎓 Lihat', 'lnk', true) : el('span', 'none', '–'));
+      const doc = td('');
+      doc.append(r.cv ? link(r.cv, 'CV', 'lnk', true) : el('span', 'none', 'CV –'), ' ',
+                 r.sertifikat ? link(r.sertifikat, 'Sertifikat', 'lnk', true) : el('span', 'none', 'Sertifikat –'));
       const del = el('button', 'del', 'Hapus'); del.type = 'button';
       del.addEventListener('click', () => remove([r.id], r.nama));
       const a = td('', link(waLink(r.hp), 'WA', 'lnk wa', true));
