@@ -18,6 +18,9 @@
  *   ACCESS_TEAM     domain tim Cloudflare Access, mis. xxx.cloudflareaccess.com
  *   ACCESS_AUD      Application Audience (AUD) tag aplikasi Access untuk /admin
  *   ADMIN_EMAILS    email admin yang boleh masuk, dipisah koma
+ *   SHEET_WEBHOOK   (secret, opsional) URL web app Google Apps Script di sheet "Pendaftar".
+ *                   Dipanggil setiap ada pendaftar baru / data dihapus, supaya sheet langsung
+ *                   sinkron (lihat apps-script/Sync.gs).
  */
 import FORM_HTML from './form.html';
 import ADMIN_HTML from './admin.html';
@@ -88,7 +91,7 @@ export default {
     if (method === 'POST' && url.pathname === '/api/submit') return handleSubmit(request, env, ctx);
     if (method === 'GET' && url.pathname === '/export.csv') return handleExport(url, env);
     if (method === 'GET' && url.pathname.startsWith('/file/')) return handleFile(url, env);
-    if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return handleAdmin(request, url, env);
+    if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return handleAdmin(request, url, env, ctx);
 
     return new Response('Not found', { status: 404 });
   }
@@ -225,7 +228,20 @@ async function handleSubmit(request, env, ctx) {
     return json({ ok: false, error: 'Server sedang sibuk.' }, 500);
   }
 
+  pingSheet(env, ctx);
   return json({ ok: true, nama });
+}
+
+// Minta Apps Script di sheet "Pendaftar" sinkron sekarang (tidak menunda respons ke user)
+function pingSheet(env, ctx) {
+  if (!env.SHEET_WEBHOOK || !env.EXPORT_KEY) return;
+  const u = new URL(env.SHEET_WEBHOOK);
+  u.searchParams.set('key', env.EXPORT_KEY);
+  ctx.waitUntil(
+    fetch(u, { method: 'POST' })
+      .then(r => { if (!r.ok) console.warn('Sheet sync ping', r.status); })
+      .catch(e => console.warn('Sheet sync ping gagal', e.message))
+  );
 }
 
 /* ---------- Export CSV (untuk IMPORTDATA di Google Sheets) ---------- */
@@ -293,7 +309,7 @@ async function sign(env, key) {
 
 /* ---------- Admin ---------- */
 
-async function handleAdmin(request, url, env) {
+async function handleAdmin(request, url, env, ctx) {
   const admin = await verifyAccess(request, env);
   if (!admin) return new Response('Akses ditolak. Buka lewat https://' + url.host + '/admin dan login dengan email admin.', { status: 403 });
   const path = url.pathname.replace(/\/+$/, '') || '/admin';
@@ -343,6 +359,7 @@ async function handleAdmin(request, url, env) {
     if (keys.length) await env.FILES.delete(keys);
     const res = await env.DB.prepare('DELETE FROM pendaftar WHERE id IN (' + marks + ')').bind(...ids).run();
     console.log('Admin delete', admin, ids);
+    pingSheet(env, ctx);
     return json({ ok: true, deleted: res.meta.changes });
   }
 

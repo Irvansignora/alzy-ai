@@ -14,10 +14,12 @@ Live: https://daftar-job.iranza.com
 - **Pendaftar**: disimpan di D1 (`daftar-job`, tabel `pendaftar`).
 - **CV & sertifikat** (PDF/JPG/PNG, maks 5 MB): disimpan di R2 (`daftar-job-files`).
   CV wajib; sertifikat wajib kalau level JLPT / JFT-Basic.
-- **Spreadsheet "Pendaftar"** menarik semua data via
-  `=IMPORTDATA("https://daftar-job.iranza.com/export.csv?key=EXPORT_KEY")` (refresh ±1 jam),
-  termasuk link download CV & sertifikat. Link file ditandatangani (HMAC) — tanpa `sig` yang benar = 403.
-  Jangan share spreadsheet ini ke publik.
+- **Spreadsheet "Pendaftar"** disinkronkan oleh Google Apps Script (`apps-script/Sync.gs`) yang menarik
+  `/export.csv?key=EXPORT_KEY`, termasuk link download CV & sertifikat (link ditandatangani HMAC).
+  Worker memanggil web app script itu (`SHEET_WEBHOOK`) setiap ada pendaftar baru / data dihapus,
+  jadi sheet ter-update dalam hitungan detik; ada juga sinkron otomatis tiap 5 menit sebagai cadangan.
+  Script menulis tab "Pendaftar" (semua), "Kandidat TG" dan "Kandidat Gijinkoku".
+  Cara pasang ada di kepala file `apps-script/Sync.gs`. Jangan share spreadsheet ini ke publik.
 
 ## Halaman admin
 https://daftar-job.iranza.com/admin — lihat, cari, filter (TG / Gijinkoku / dobel), buka CV & sertifikat,
